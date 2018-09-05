@@ -6,17 +6,23 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
+import object_detection.object_detector as obj
 
 def test_local_image():
 
+    obj_detection_graph = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + 'object_detection/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb'
+
+    print("Loading object detection model at %s" obj_detection_graph)
+
+    Obj_Detector = obj.Object_Detector(obj_detection_graph)
+
     test_img_path = 'chase.png'
     test_img = cv2.imread(test_img_path)
-    detection_list, _, _ = run_on_image(test_img, None, None)
+    detection_list = Obj_Detector.detect_objects_in_np(test_img)
     out_img = visualize_results(test_img, detection_list, display=False)
     #import pdb;pdb.set_trace()
     cv2.imwrite('chase_out.jpg', out_img)
-    obj_detection_graph = '/dccstor/srallap1/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb'
+    
 
 
 np.random.seed(10)
@@ -47,7 +53,8 @@ def visualize_results(img_np, detection_list, display=True):
 
         conf = cur_score
         #label = bbox['class_str']
-        label = 'Class_%i' % cur_class
+        # label = 'Class_%i' % cur_class
+        label = obj.OBJECT_STRINGS[cur_class]['name']
         message = label + '%% %.2f' % conf
 
         color = COLORS[ii]
