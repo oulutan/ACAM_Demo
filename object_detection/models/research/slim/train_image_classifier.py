@@ -35,10 +35,7 @@ tf.app.flags.DEFINE_string(
     'Directory where checkpoints and event logs are written to.')
 
 tf.app.flags.DEFINE_integer('num_clones', 1,
-                            'Number of model clones to deploy. Note For '
-                            'historical reasons loss from all clones averaged '
-                            'out and learning rate decay happen per clone '
-                            'epochs')
+                            'Number of model clones to deploy.')
 
 tf.app.flags.DEFINE_boolean('clone_on_cpu', False,
                             'Use CPUs to deploy clones.')
@@ -148,10 +145,7 @@ tf.app.flags.DEFINE_float(
 
 tf.app.flags.DEFINE_float(
     'num_epochs_per_decay', 2.0,
-    'Number of epochs after which learning rate decays. Note: this flag counts '
-    'epochs per clone but aggregates per sync replicas. So 1.0 means that '
-    'each clone will go over full epoch individually, but replicas will go '
-    'once across all replicas.')
+    'Number of epochs after which learning rate decays.')
 
 tf.app.flags.DEFINE_bool(
     'sync_replicas', False,
@@ -239,12 +233,8 @@ def _configure_learning_rate(num_samples_per_epoch, global_step):
   Raises:
     ValueError: if
   """
-  # Note: when num_clones is > 1, this will actually have each clone to go
-  # over each epoch FLAGS.num_epochs_per_decay times. This is different
-  # behavior from sync replicas and is expected to produce different results.
-  decay_steps = int(num_samples_per_epoch * FLAGS.num_epochs_per_decay /
-                    FLAGS.batch_size)
-
+  decay_steps = int(num_samples_per_epoch / FLAGS.batch_size *
+                    FLAGS.num_epochs_per_decay)
   if FLAGS.sync_replicas:
     decay_steps /= FLAGS.replicas_to_aggregate
 
@@ -266,7 +256,7 @@ def _configure_learning_rate(num_samples_per_epoch, global_step):
                                      cycle=False,
                                      name='polynomial_decay_learning_rate')
   else:
-    raise ValueError('learning_rate_decay_type [%s] was not recognized' %
+    raise ValueError('learning_rate_decay_type [%s] was not recognized',
                      FLAGS.learning_rate_decay_type)
 
 
@@ -318,7 +308,7 @@ def _configure_optimizer(learning_rate):
   elif FLAGS.optimizer == 'sgd':
     optimizer = tf.train.GradientDescentOptimizer(learning_rate)
   else:
-    raise ValueError('Optimizer [%s] was not recognized' % FLAGS.optimizer)
+    raise ValueError('Optimizer [%s] was not recognized', FLAGS.optimizer)
   return optimizer
 
 
@@ -350,10 +340,12 @@ def _get_init_fn():
   # TODO(sguada) variables.filter_variables()
   variables_to_restore = []
   for var in slim.get_model_variables():
+    excluded = False
     for exclusion in exclusions:
       if var.op.name.startswith(exclusion):
+        excluded = True
         break
-    else:
+    if not excluded:
       variables_to_restore.append(var)
 
   if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
@@ -559,6 +551,7 @@ def main(_):
 
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
+
 
     ###########################
     # Kicks off the training. #

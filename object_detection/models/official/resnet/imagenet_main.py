@@ -19,13 +19,10 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 
-from absl import app as absl_app
-from absl import flags
-import tensorflow as tf  # pylint: disable=g-bad-import-order
+import tensorflow as tf
 
-from official.utils.flags import core as flags_core
-from official.utils.logs import logger
 from official.resnet import imagenet_preprocessing
 from official.resnet import resnet_model
 from official.resnet import resnet_run_loop
@@ -40,9 +37,8 @@ _NUM_IMAGES = {
 }
 
 _NUM_TRAIN_FILES = 1024
-_SHUFFLE_BUFFER = 10000
+_SHUFFLE_BUFFER = 1500
 
-DATASET_NAME = 'ImageNet'
 
 ###############################################################################
 # Data processing
@@ -97,7 +93,7 @@ def _parse_example_proto(example_serialized):
   feature_map = {
       'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
                                           default_value=''),
-      'image/class/label': tf.FixedLenFeature([], dtype=tf.int64,
+      'image/class/label': tf.FixedLenFeature([1], dtype=tf.int64,
                                               default_value=-1),
       'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
                                              default_value=''),
@@ -153,18 +149,25 @@ def parse_record(raw_record, is_training):
       num_channels=_NUM_CHANNELS,
       is_training=is_training)
 
+  label = tf.one_hot(tf.reshape(label, shape=[]), _NUM_CLASSES)
+
   return image, label
 
 
-def input_fn(is_training, data_dir, batch_size, num_epochs=1, num_gpus=None):
+def input_fn(is_training, data_dir, batch_size, num_epochs=1,
+             num_parallel_calls=1, multi_gpu=False):
   """Input function which provides batches for train or eval.
-
   Args:
     is_training: A boolean denoting whether the input is for training.
     data_dir: The directory containing the input data.
     batch_size: The number of samples per batch.
     num_epochs: The number of epochs to repeat the dataset.
-    num_gpus: The number of gpus used for training.
+    num_parallel_calls: The number of records that are processed in parallel.
+      This can be optimized per data set but for generally homogeneous data
+      sets, should be approximately the number of available CPU cores.
+    multi_gpu: Whether this is run multi-GPU. Note that this is only required
+      currently to handle the batch leftovers, and can be removed
+      when that is handled directly by Estimator.
 
   Returns:
     A dataset that can be used for iteration.
@@ -176,41 +179,29 @@ def input_fn(is_training, data_dir, batch_size, num_epochs=1, num_gpus=None):
     # Shuffle the input files
     dataset = dataset.shuffle(buffer_size=_NUM_TRAIN_FILES)
 
-  # Convert to individual records.
-  # cycle_length = 10 means 10 files will be read and deserialized in parallel.
-  # This number is low enough to not cause too much contention on small systems
-  # but high enough to provide the benefits of parallelization. You may want
-  # to increase this number if you have a large number of CPU cores.
-  dataset = dataset.apply(tf.contrib.data.parallel_interleave(
-      tf.data.TFRecordDataset, cycle_length=10))
+  num_images = is_training and _NUM_IMAGES['train'] or _NUM_IMAGES['validation']
+
+  # Convert to individual records
+  dataset = dataset.flat_map(tf.data.TFRecordDataset)
 
   return resnet_run_loop.process_record_dataset(
-      dataset=dataset,
-      is_training=is_training,
-      batch_size=batch_size,
-      shuffle_buffer=_SHUFFLE_BUFFER,
-      parse_record_fn=parse_record,
-      num_epochs=num_epochs,
-      num_gpus=num_gpus,
-      examples_per_epoch=_NUM_IMAGES['train'] if is_training else None
-  )
+      dataset, is_training, batch_size, _SHUFFLE_BUFFER, parse_record,
+      num_epochs, num_parallel_calls, examples_per_epoch=num_images,
+      multi_gpu=multi_gpu)
 
 
-def get_synth_input_fn(dtype):
+def get_synth_input_fn():
   return resnet_run_loop.get_synth_input_fn(
-      _DEFAULT_IMAGE_SIZE, _DEFAULT_IMAGE_SIZE, _NUM_CHANNELS, _NUM_CLASSES,
-      dtype=dtype)
+        _DEFAULT_IMAGE_SIZE, _DEFAULT_IMAGE_SIZE, _NUM_CHANNELS, _NUM_CLASSES)
 
 
 ###############################################################################
 # Running the model
 ###############################################################################
 class ImagenetModel(resnet_model.Model):
-  """Model class with appropriate defaults for Imagenet data."""
 
   def __init__(self, resnet_size, data_format=None, num_classes=_NUM_CLASSES,
-               resnet_version=resnet_model.DEFAULT_VERSION,
-               dtype=resnet_model.DEFAULT_DTYPE):
+    version=resnet_model.DEFAULT_VERSION):
     """These are the parameters that work for Imagenet data.
 
     Args:
@@ -219,9 +210,8 @@ class ImagenetModel(resnet_model.Model):
         data format to use when setting up the model.
       num_classes: The number of output classes needed from the model. This
         enables users to extend the same model to their own datasets.
-      resnet_version: Integer representing which version of the ResNet network
-        to use. See README for details. Valid values: [1, 2]
-      dtype: The TensorFlow dtype to use for calculations.
+      version: Integer representing which version of the ResNet network to use.
+        See README for details. Valid values: [1, 2]
     """
 
     # For bigger models, we want to use "bottleneck" layers
@@ -241,30 +231,19 @@ class ImagenetModel(resnet_model.Model):
         conv_stride=2,
         first_pool_size=3,
         first_pool_stride=2,
+        second_pool_size=7,
+        second_pool_stride=1,
         block_sizes=_get_block_sizes(resnet_size),
         block_strides=[1, 2, 2, 2],
         final_size=final_size,
-        resnet_version=resnet_version,
-        data_format=data_format,
-        dtype=dtype
-    )
+        version=version,
+        data_format=data_format)
 
 
 def _get_block_sizes(resnet_size):
-  """Retrieve the size of each block_layer in the ResNet model.
-
-  The number of block layers used for the Resnet model varies according
+  """The number of block layers used for the Resnet model varies according
   to the size of the model. This helper grabs the layer set we want, throwing
   an error if a non-standard size has been selected.
-
-  Args:
-    resnet_size: The number of convolutional layers needed in the model.
-
-  Returns:
-    A list of block sizes to use in building the model.
-
-  Raises:
-    KeyError: if invalid resnet_size is received.
   """
   choices = {
       18: [2, 2, 2, 2],
@@ -286,67 +265,31 @@ def _get_block_sizes(resnet_size):
 
 def imagenet_model_fn(features, labels, mode, params):
   """Our model_fn for ResNet to be used with our Estimator."""
-
-  # Warmup and higher lr may not be valid for fine tuning with small batches
-  # and smaller numbers of training images.
-  if params['fine_tune']:
-    warmup = False
-    base_lr = .1
-  else:
-    warmup = True
-    base_lr = .128
-
   learning_rate_fn = resnet_run_loop.learning_rate_with_decay(
       batch_size=params['batch_size'], batch_denom=256,
       num_images=_NUM_IMAGES['train'], boundary_epochs=[30, 60, 80, 90],
-      decay_rates=[1, 0.1, 0.01, 0.001, 1e-4], warmup=warmup, base_lr=base_lr)
+      decay_rates=[1, 0.1, 0.01, 0.001, 1e-4])
 
-  return resnet_run_loop.resnet_model_fn(
-      features=features,
-      labels=labels,
-      mode=mode,
-      model_class=ImagenetModel,
-      resnet_size=params['resnet_size'],
-      weight_decay=1e-4,
-      learning_rate_fn=learning_rate_fn,
-      momentum=0.9,
-      data_format=params['data_format'],
-      resnet_version=params['resnet_version'],
-      loss_scale=params['loss_scale'],
-      loss_filter_fn=None,
-      dtype=params['dtype'],
-      fine_tune=params['fine_tune']
-  )
+  return resnet_run_loop.resnet_model_fn(features, labels, mode, ImagenetModel,
+                                         resnet_size=params['resnet_size'],
+                                         weight_decay=1e-4,
+                                         learning_rate_fn=learning_rate_fn,
+                                         momentum=0.9,
+                                         data_format=params['data_format'],
+                                         version=params['version'],
+                                         loss_filter_fn=None,
+                                         multi_gpu=params['multi_gpu'])
 
 
-def define_imagenet_flags():
-  resnet_run_loop.define_resnet_flags(
-      resnet_size_choices=['18', '34', '50', '101', '152', '200'])
-  flags.adopt_module_key_flags(resnet_run_loop)
-  flags_core.set_defaults(train_epochs=90)
+def main(argv):
+  parser = resnet_run_loop.ResnetArgParser(
+      resnet_size_choices=[18, 34, 50, 101, 152, 200])
+  flags = parser.parse_args(args=argv[1:])
 
-
-def run_imagenet(flags_obj):
-  """Run ResNet ImageNet training and eval loop.
-
-  Args:
-    flags_obj: An object containing parsed flag values.
-  """
-  input_function = (flags_obj.use_synthetic_data and
-                    get_synth_input_fn(flags_core.get_tf_dtype(flags_obj)) or
-                    input_fn)
-
-  resnet_run_loop.resnet_main(
-      flags_obj, imagenet_model_fn, input_function, DATASET_NAME,
-      shape=[_DEFAULT_IMAGE_SIZE, _DEFAULT_IMAGE_SIZE, _NUM_CHANNELS])
-
-
-def main(_):
-  with logger.benchmark_context(flags.FLAGS):
-    run_imagenet(flags.FLAGS)
+  input_function = flags.use_synthetic_data and get_synth_input_fn() or input_fn
+  resnet_run_loop.resnet_main(flags, imagenet_model_fn, input_function)
 
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)
-  define_imagenet_flags()
-  absl_app.run(main)
+  tf.app.run(argv=sys.argv)

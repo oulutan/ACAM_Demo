@@ -21,7 +21,6 @@ from __future__ import print_function
 import os
 
 
-from absl import flags
 import tensorflow as tf
 
 import data_provider
@@ -31,7 +30,7 @@ class DataProviderTest(tf.test.TestCase):
 
   def test_mnist_data_reading(self):
     dataset_dir = os.path.join(
-        flags.FLAGS.test_srcdir,
+        tf.flags.FLAGS.test_srcdir,
         'google3/third_party/tensorflow_models/gan/mnist/testdata')
 
     batch_size = 5

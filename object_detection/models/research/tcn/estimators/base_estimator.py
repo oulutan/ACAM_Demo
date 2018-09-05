@@ -71,10 +71,12 @@ class InitFromPretrainedCheckpointHook(session_run_hook.SessionRunHook):
     # Variable filtering by given exclude_scopes.
     filtered_variables_to_restore = {}
     for v in variable_to_restore:
+      excluded = False
       for exclusion in exclusions:
         if v.name.startswith(exclusion):
+          excluded = True
           break
-      else:
+      if not excluded:
         var_name = v.name.split(':')[0]
         filtered_variables_to_restore[var_name] = v
 

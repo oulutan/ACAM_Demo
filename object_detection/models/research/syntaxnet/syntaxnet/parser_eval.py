@@ -19,8 +19,6 @@
 import os
 import os.path
 import time
-from absl import app
-from absl import flags
 import tempfile
 import tensorflow as tf
 
@@ -35,6 +33,7 @@ from syntaxnet import structured_graph_builder
 from syntaxnet.ops import gen_parser_ops
 from syntaxnet import task_spec_pb2
 
+flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 
@@ -159,4 +158,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  tf.app.run()

@@ -17,9 +17,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import tensorflow as tf
 import time
-
-import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 from official.mnist import mnist
 
@@ -43,7 +42,6 @@ def make_estimator():
 
 
 class Tests(tf.test.TestCase):
-  """Run tests for MNIST model."""
 
   def test_mnist(self):
     classifier = make_estimator()
@@ -59,7 +57,7 @@ class Tests(tf.test.TestCase):
 
     input_fn = lambda: tf.random_uniform([3, 784])
     predictions_generator = classifier.predict(input_fn)
-    for _ in range(3):
+    for i in range(3):
       predictions = next(predictions_generator)
       self.assertEqual(predictions['probabilities'].shape, (10,))
       self.assertEqual(predictions['classes'].shape, ())
@@ -105,7 +103,6 @@ class Tests(tf.test.TestCase):
 
 
 class Benchmarks(tf.test.Benchmark):
-  """Simple speed benchmarking for MNIST."""
 
   def benchmark_train_step_time(self):
     classifier = make_estimator()

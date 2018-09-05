@@ -42,7 +42,7 @@ class DeeplabModelTest(tf.test.TestCase):
     image_pyramids = [[1], [0.5, 1]]
 
     # Test two model variants.
-    model_variants = ['xception_65', 'mobilenet_v2']
+    model_variants = ['xception_65']
 
     # Test with two output_types.
     outputs_to_num_classes = {'semantic': 3,
@@ -78,7 +78,7 @@ class DeeplabModelTest(tf.test.TestCase):
 
               # Expected number of logits = len(image_pyramid) + 1, since the
               # last logits is merged from all the scales.
-              self.assertEqual(len(scales_to_logits), expected_num_logits[i])
+              self.assertEquals(len(scales_to_logits), expected_num_logits[i])
 
   def testForwardpassDeepLabv3plus(self):
     crop_size = [33, 33]
@@ -87,12 +87,16 @@ class DeeplabModelTest(tf.test.TestCase):
     model_options = common.ModelOptions(
         outputs_to_num_classes,
         crop_size,
+        atrous_rates=[6],
         output_stride=16
     )._replace(
         add_image_level_feature=True,
         aspp_with_batch_norm=True,
+        aspp_with_separable_conv=True,
+        decoder_output_stride=4,
+        decoder_use_separable_conv=True,
         logits_kernel_size=1,
-        model_variant='mobilenet_v2')  # Employ MobileNetv2 for fast test.
+        model_variant='xception_65')
 
     g = tf.Graph()
     with g.as_default():
@@ -111,7 +115,7 @@ class DeeplabModelTest(tf.test.TestCase):
         for output in outputs_to_num_classes:
           scales_to_logits = outputs_to_scales_to_logits[output]
           # Expect only one output.
-          self.assertEqual(len(scales_to_logits), 1)
+          self.assertEquals(len(scales_to_logits), 1)
           for logits in scales_to_logits.values():
             self.assertTrue(logits.any())
 

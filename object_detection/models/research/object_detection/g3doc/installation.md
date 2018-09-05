@@ -4,16 +4,14 @@
 
 Tensorflow Object Detection API depends on the following libraries:
 
-*   Protobuf 3.0.0
+*   Protobuf 2.6
 *   Python-tk
 *   Pillow 1.0
 *   lxml
 *   tf Slim (which is included in the "tensorflow/models/research/" checkout)
 *   Jupyter notebook
 *   Matplotlib
-*   Tensorflow (>=1.9.0)
-*   Cython
-*   contextlib2
+*   Tensorflow
 *   cocoapi
 
 For detailed steps to install Tensorflow, follow the [Tensorflow installation
@@ -31,32 +29,23 @@ The remaining libraries can be installed on Ubuntu 16.04 using via apt-get:
 
 ``` bash
 sudo apt-get install protobuf-compiler python-pil python-lxml python-tk
-pip install --user Cython
-pip install --user contextlib2
-pip install --user jupyter
-pip install --user matplotlib
+sudo pip install jupyter
+sudo pip install matplotlib
 ```
 
 Alternatively, users can install dependencies using pip:
 
 ``` bash
-pip install --user Cython
-pip install --user contextlib2
-pip install --user pillow
-pip install --user lxml
-pip install --user jupyter
-pip install --user matplotlib
+sudo pip install pillow
+sudo pip install lxml
+sudo pip install jupyter
+sudo pip install matplotlib
 ```
-
-<!-- common_typos_disable -->
-**Note**: sometimes "sudo apt-get install protobuf-compiler" will install
-Protobuf 3+ versions for you and some users have issues when using 3.5.
-If that is your case, try the [manual](#Manual-protobuf-compiler-installation-and-usage) installation.
 
 ## COCO API installation
 
 Download the
-[cocoapi](https://github.com/cocodataset/cocoapi) and
+<a href="https://github.com/cocodataset/cocoapi" target=_blank>cocoapi</a> and
 copy the pycocotools subfolder to the tensorflow/models/research directory if
 you are interested in using COCO evaluation metrics. The default metrics are
 based on those used in Pascal VOC evaluation. To use the COCO object detection
@@ -85,24 +74,6 @@ the tensorflow/models/research/ directory:
 protoc object_detection/protos/*.proto --python_out=.
 ```
 
-**Note**: If you're getting errors while compiling, you might be using an incompatible protobuf compiler. If that's the case, use the following manual installation
-
-## Manual protobuf-compiler installation and usage
-Download and install the 3.0 release of protoc, then unzip the file.
-
-```bash
-# From tensorflow/models/research/
-wget -O protobuf.zip https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-linux-x86_64.zip
-unzip protobuf.zip
-```
-
-Run the compilation process again, but use the downloaded version of protoc
-
-```bash
-# From tensorflow/models/research/
-./bin/protoc object_detection/protos/*.proto --python_out=.
-```
-
 ## Add Libraries to PYTHONPATH
 
 When running locally, the tensorflow/models/research/ and slim directories
@@ -117,8 +88,7 @@ export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
 
 Note: This command needs to run from every new terminal you start. If you wish
 to avoid running this manually, you can add it as a new line to the end of your
-~/.bashrc file, replacing \`pwd\` with the absolute path of
-tensorflow/models/research on your system.
+~/.bashrc file.
 
 # Testing the Installation
 

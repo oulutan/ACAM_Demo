@@ -42,8 +42,6 @@ import ast
 import collections
 import os
 import os.path
-from absl import app
-from absl import flags
 import tensorflow as tf
 
 from google.protobuf import text_format
@@ -57,6 +55,7 @@ from dragnn.python import trainer_lib
 from syntaxnet.ops import gen_parser_ops
 from syntaxnet.util import check
 
+flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('tf_master', '',
@@ -192,4 +191,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  tf.app.run()

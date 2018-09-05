@@ -9,10 +9,9 @@ py_binary(
     name = "conll_checkpoint_converter",
     srcs = ["conll_checkpoint_converter.py"],
     deps = [
-        "//dragnn/protos:spec_pb2_py",
+        "//dragnn/protos:spec_py_pb2",
         "//dragnn/python:dragnn_model_saver_lib",
         "//dragnn/python:spec_builder",
-        "@absl_py//absl/flags",
         "@org_tensorflow//tensorflow:tensorflow_py",
         "@org_tensorflow//tensorflow/core:protos_all_py",
     ],
@@ -29,7 +28,6 @@ py_binary(
         ":components",
         "//dragnn/python:evaluation",
         "//dragnn/python:spec_builder",
-        "@absl_py//absl/flags",
     ],
 )
 
@@ -45,7 +43,6 @@ py_binary(
         "//dragnn/python:dragnn_ops",
         "//dragnn/python:evaluation",
         "//dragnn/python:spec_builder",
-        "@absl_py//absl/flags",
     ],
 )
 
@@ -61,7 +58,6 @@ py_binary(
         "//dragnn/python:dragnn_ops",
         "//dragnn/python:evaluation",
         "//dragnn/python:spec_builder",
-        "@absl_py//absl/flags",
     ],
 )
 
@@ -77,7 +73,6 @@ py_binary(
         "//dragnn/python:dragnn_ops",
         "//dragnn/python:evaluation",
         "//dragnn/python:spec_builder",
-        "@absl_py//absl/flags",
     ],
 )
 
@@ -91,8 +86,7 @@ py_binary(
         "//dragnn/python:lexicon",
         "//dragnn/python:spec_builder",
         "//dragnn/python:trainer_lib",
-        "//syntaxnet:task_spec_pb2_py",
-        "@absl_py//absl/flags",
+        "//syntaxnet:task_spec_py_pb2",
     ],
 )
 
@@ -106,9 +100,7 @@ py_binary(
         "//dragnn/python:lexicon",
         "//dragnn/python:spec_builder",
         "//dragnn/python:trainer_lib",
-        "//syntaxnet:task_spec_pb2_py",
-        "@absl_py//absl:app",
-        "@absl_py//absl/flags",
+        "//syntaxnet:task_spec_py_pb2",
     ],
 )
 
@@ -118,14 +110,13 @@ py_binary(
     deps = [
         "//dragnn/core:dragnn_bulk_ops",
         "//dragnn/core:dragnn_ops",
-        "//dragnn/protos:spec_pb2_py",
+        "//dragnn/protos:spec_py_pb2",
         "//dragnn/python:evaluation",
         "//dragnn/python:graph_builder",
         "//dragnn/python:sentence_io",
         "//dragnn/python:spec_builder",
         "//dragnn/python:trainer_lib",
         "//syntaxnet:parser_ops",
-        "@absl_py//absl/flags",
         "@org_tensorflow//tensorflow:tensorflow_py",
         "@org_tensorflow//tensorflow/core:protos_all_py",
     ],
@@ -137,7 +128,7 @@ py_binary(
     deps = [
         "//dragnn/core:dragnn_bulk_ops",
         "//dragnn/core:dragnn_ops",
-        "//dragnn/protos:spec_pb2_py",
+        "//dragnn/protos:spec_py_pb2",
         "//dragnn/python:dragnn_ops",
         "//dragnn/python:evaluation",
         "//dragnn/python:graph_builder",
@@ -145,11 +136,9 @@ py_binary(
         "//dragnn/python:spec_builder",
         "//dragnn/python:trainer_lib",
         "//syntaxnet:parser_ops",
-        "//syntaxnet:sentence_pb2_py",
-        "//syntaxnet:task_spec_pb2_py",
+        "//syntaxnet:sentence_py_pb2",
+        "//syntaxnet:task_spec_py_pb2",
         "//syntaxnet/util:check",
-        "@absl_py//absl:app",
-        "@absl_py//absl/flags",
         "@org_tensorflow//tensorflow:tensorflow_py",
         "@org_tensorflow//tensorflow/core:protos_all_py",
     ],
@@ -201,11 +190,11 @@ py_library(
     deps = [
         "//dragnn/core:dragnn_bulk_ops",
         "//dragnn/core:dragnn_ops",
-        "//dragnn/protos:spec_pb2_py",
+        "//dragnn/protos:spec_py_pb2",
         "//dragnn/python:graph_builder",
         "//dragnn/python:sentence_io",
         "//syntaxnet:parser_ops",
-        "//syntaxnet:sentence_pb2_py",
+        "//syntaxnet:sentence_py_pb2",
         "@org_tensorflow//tensorflow:tensorflow_py",
         "@org_tensorflow//tensorflow/core:protos_all_py",
     ],
@@ -226,6 +215,6 @@ py_library(
         "//dragnn/python:spec_builder",
         "//dragnn/python:trainer_lib",
         "//dragnn/python:visualization",
-        "//syntaxnet:task_spec_pb2_py",
+        "//syntaxnet:task_spec_py_pb2",
     ],
 )

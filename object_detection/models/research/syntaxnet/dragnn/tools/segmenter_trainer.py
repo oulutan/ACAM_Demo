@@ -22,7 +22,6 @@ import os
 import os.path
 import random
 import time
-from absl import flags
 import tensorflow as tf
 
 from tensorflow.python.platform import gfile
@@ -43,6 +42,7 @@ from dragnn.python import lexicon
 from dragnn.python import spec_builder
 from dragnn.python import trainer_lib
 
+flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('tf_master', '',

@@ -90,8 +90,3 @@ ENV/
 
 # PyCharm
 .idea/
-
-# For mac
-.DS_Store
-
-samples/outreach/blogs/segmentation_blogpost/carvana-image-masking-challenge/

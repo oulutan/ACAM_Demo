@@ -12,9 +12,8 @@ cc_library(
         "//dragnn/core:index_translator",
         "//dragnn/core/interfaces:component",
         "//dragnn/core/interfaces:transition_state",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:data_proto_cc",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:data_proto",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
         "//syntaxnet:test_main",
     ],
@@ -28,9 +27,8 @@ cc_library(
         "//dragnn/components/util:bulk_feature_extractor",
         "//dragnn/core:compute_session",
         "//dragnn/core:input_batch_cache",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:data_proto_cc",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:data_proto",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
         "//syntaxnet:test_main",
     ],
@@ -45,12 +43,6 @@ cc_library(
         "//syntaxnet:base",
         "//syntaxnet:test_main",
     ],
-)
-
-cc_library(
-    name = "fake_component_base",
-    hdrs = ["fake_component_base.h"],
-    deps = ["//dragnn/core/interfaces:component"],
 )
 
 cc_library(

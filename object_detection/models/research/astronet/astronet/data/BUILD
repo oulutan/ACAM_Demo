@@ -8,11 +8,10 @@ py_binary(
     deps = [":preprocess"],
 )
 
-py_library(
+py_binary(
     name = "preprocess",
     srcs = ["preprocess.py"],
     deps = [
-        "//astronet/util:example_util",
         "//light_curve_util:kepler_io",
         "//light_curve_util:median_filter",
         "//light_curve_util:util",

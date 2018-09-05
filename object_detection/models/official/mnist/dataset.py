@@ -17,10 +17,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import gzip
 import os
 import shutil
-import tempfile
+import gzip
 
 import numpy as np
 from six.moves import urllib
@@ -37,7 +36,7 @@ def check_image_file_header(filename):
   """Validate that filename corresponds to images for the MNIST dataset."""
   with tf.gfile.Open(filename, 'rb') as f:
     magic = read32(f)
-    read32(f)  # num_images, unused
+    num_images = read32(f)
     rows = read32(f)
     cols = read32(f)
     if magic != 2051:
@@ -53,7 +52,7 @@ def check_labels_file_header(filename):
   """Validate that filename corresponds to labels for the MNIST dataset."""
   with tf.gfile.Open(filename, 'rb') as f:
     magic = read32(f)
-    read32(f)  # num_items, unused
+    num_items = read32(f)
     if magic != 2049:
       raise ValueError('Invalid magic number %d in MNIST file %s' % (magic,
                                                                      f.name))
@@ -68,19 +67,16 @@ def download(directory, filename):
     tf.gfile.MakeDirs(directory)
   # CVDF mirror of http://yann.lecun.com/exdb/mnist/
   url = 'https://storage.googleapis.com/cvdf-datasets/mnist/' + filename + '.gz'
-  _, zipped_filepath = tempfile.mkstemp(suffix='.gz')
+  zipped_filepath = filepath + '.gz'
   print('Downloading %s to %s' % (url, zipped_filepath))
   urllib.request.urlretrieve(url, zipped_filepath)
-  with gzip.open(zipped_filepath, 'rb') as f_in, \
-      tf.gfile.Open(filepath, 'wb') as f_out:
+  with gzip.open(zipped_filepath, 'rb') as f_in, open(filepath, 'wb') as f_out:
     shutil.copyfileobj(f_in, f_out)
   os.remove(zipped_filepath)
   return filepath
 
 
 def dataset(directory, images_file, labels_file):
-  """Download and parse MNIST dataset."""
-
   images_file = download(directory, images_file)
   labels_file = download(directory, labels_file)
 

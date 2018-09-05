@@ -34,22 +34,37 @@ A local training job can be run with the following command:
 
 ```bash
 # From the tensorflow/models/research/ directory
-PIPELINE_CONFIG_PATH={path to pipeline config file}
-MODEL_DIR={path to model directory}
-NUM_TRAIN_STEPS=50000
-NUM_EVAL_STEPS=2000
-python object_detection/model_main.py \
-    --pipeline_config_path=${PIPELINE_CONFIG_PATH} \
-    --model_dir=${MODEL_DIR} \
-    --num_train_steps=${NUM_TRAIN_STEPS} \
-    --num_eval_steps=${NUM_EVAL_STEPS} \
-    --alsologtostderr
+python object_detection/train.py \
+    --logtostderr \
+    --pipeline_config_path=${PATH_TO_YOUR_PIPELINE_CONFIG} \
+    --train_dir=${PATH_TO_TRAIN_DIR}
 ```
 
-where `${PIPELINE_CONFIG_PATH}` points to the pipeline config and
-`${MODEL_DIR}` points to the directory in which training checkpoints
-and events will be written to. Note that this binary will interleave both
-training and evaluation.
+where `${PATH_TO_YOUR_PIPELINE_CONFIG}` points to the pipeline config and
+`${PATH_TO_TRAIN_DIR}` points to the directory in which training checkpoints
+and events will be written to. By default, the training job will
+run indefinitely until the user kills it.
+
+## Running the Evaluation Job
+
+Evaluation is run as a separate job. The eval job will periodically poll the
+train directory for new checkpoints and evaluate them on a test dataset. The
+job can be run using the following command:
+
+```bash
+# From the tensorflow/models/research/ directory
+python object_detection/eval.py \
+    --logtostderr \
+    --pipeline_config_path=${PATH_TO_YOUR_PIPELINE_CONFIG} \
+    --checkpoint_dir=${PATH_TO_TRAIN_DIR} \
+    --eval_dir=${PATH_TO_EVAL_DIR}
+```
+
+where `${PATH_TO_YOUR_PIPELINE_CONFIG}` points to the pipeline config,
+`${PATH_TO_TRAIN_DIR}` points to the directory in which training checkpoints
+were saved (same as the training job) and `${PATH_TO_EVAL_DIR}` points to the
+directory in which evaluation events will be saved. As with the training job,
+the eval job run until terminated by default.
 
 ## Running Tensorboard
 
@@ -58,9 +73,9 @@ using the recommended directory structure, Tensorboard can be run using the
 following command:
 
 ```bash
-tensorboard --logdir=${MODEL_DIR}
+tensorboard --logdir=${PATH_TO_MODEL_DIRECTORY}
 ```
 
-where `${MODEL_DIR}` points to the directory that contains the
+where `${PATH_TO_MODEL_DIRECTORY}` points to the directory that contains the
 train and eval directories. Please note it may take Tensorboard a couple minutes
 to populate with data.

@@ -13,9 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "syntaxnet/ops/shape_helpers.h"
 #include "tensorflow/core/framework/op.h"
-#include "tensorflow/core/framework/shape_inference.h"
 
 namespace syntaxnet {
 
@@ -31,14 +29,6 @@ REGISTER_OP("GoldParseReader")
     .Attr("corpus_name: string='documents'")
     .Attr("arg_prefix: string='brain_parser'")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      int feature_size;
-      TF_RETURN_IF_ERROR(context->GetAttr("feature_size", &feature_size));
-      for (int i = 0; i < feature_size; ++i) MatrixOutputShape(i, context);
-      ScalarOutputShape(feature_size, context);
-      VectorOutputShape(feature_size + 1, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 Reads sentences, parses them, and returns (gold action, feature) pairs.
 
@@ -65,15 +55,6 @@ REGISTER_OP("DecodedParseReader")
     .Attr("corpus_name: string='documents'")
     .Attr("arg_prefix: string='brain_parser'")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      int feature_size;
-      TF_RETURN_IF_ERROR(context->GetAttr("feature_size", &feature_size));
-      for (int i = 0; i < feature_size; ++i) MatrixOutputShape(i, context);
-      ScalarOutputShape(feature_size, context);
-      context->set_output(feature_size + 1, context->Vector(2));
-      VectorOutputShape(feature_size + 2, context);
-      return MatrixInputShape(0, context);
-    })
     .Doc(R"doc(
 Reads sentences and parses them taking parsing transitions based on the
 input transition scores.
@@ -104,14 +85,6 @@ REGISTER_OP("BeamParseReader")
     .Attr("continue_until_all_final: bool=false")
     .Attr("always_start_new_sentences: bool=false")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      int feature_size;
-      TF_RETURN_IF_ERROR(context->GetAttr("feature_size", &feature_size));
-      for (int i = 0; i < feature_size; ++i) MatrixOutputShape(i, context);
-      ScalarOutputShape(feature_size, context);
-      ScalarOutputShape(feature_size + 1, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 Reads sentences and creates a beam parser.
 
@@ -139,15 +112,6 @@ REGISTER_OP("BeamParser")
     .Output("alive: bool")
     .Attr("feature_size: int")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      int feature_size;
-      TF_RETURN_IF_ERROR(context->GetAttr("feature_size", &feature_size));
-      for (int i = 0; i < feature_size; ++i) MatrixOutputShape(i, context);
-      ScalarOutputShape(feature_size, context);
-      VectorOutputShape(feature_size + 1, context);
-      TF_RETURN_IF_ERROR(ScalarInputShape(0, context));
-      return MatrixInputShape(1, context);
-    })
     .Doc(R"doc(
 Updates the beam parser based on scores in the input transition scores.
 
@@ -167,13 +131,6 @@ REGISTER_OP("BeamParserOutput")
     .Output("gold_slot: int32")
     .Output("path_scores: float")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      context->set_output(0, context->Matrix(2, context->UnknownDim()));
-      context->set_output(1, context->Matrix(2, context->UnknownDim()));
-      VectorOutputShape(2, context);
-      VectorOutputShape(3, context);
-      return ScalarInputShape(0, context);
-    })
     .Doc(R"doc(
 Converts the current state of the beam parser into a set of indices into
 the scoring matrices that lead there.
@@ -195,11 +152,6 @@ REGISTER_OP("BeamEvalOutput")
     .Output("eval_metrics: int32")
     .Output("documents: string")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      context->set_output(0, context->Vector(2));
-      VectorOutputShape(1, context);
-      return ScalarInputShape(0, context);
-    })
     .Doc(R"doc(
 Computes eval metrics for the best paths in the input beams.
 
@@ -240,13 +192,6 @@ REGISTER_OP("FeatureSize")
     .Output("embedding_dims: int32")
     .Output("num_actions: int32")
     .Attr("arg_prefix: string='brain_parser'")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      VectorOutputShape(1, context);
-      VectorOutputShape(2, context);
-      ScalarOutputShape(3, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 An op that returns the number and domain sizes of parser features.
 
@@ -265,10 +210,6 @@ REGISTER_OP("FeatureVocab")
     .Attr("arg_prefix: string='brain_parser'")
     .Attr("embedding_name: string='words'")
     .Output("vocab: string")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 Returns the vocabulary of the parser features for a particular named channel.
 For "words" this would would be the entire vocabulary, plus any special tokens
@@ -286,12 +227,6 @@ REGISTER_OP("UnpackSyntaxNetSparseFeatures")
     .Output("indices: int32")
     .Output("ids: int64")
     .Output("weights: float")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      VectorOutputShape(1, context);
-      VectorOutputShape(2, context);
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Converts a vector of strings with SparseFeatures to tensors.
 
@@ -314,16 +249,11 @@ REGISTER_OP("WordEmbeddingInitializer")
     .Attr("vectors: string")
     .Attr("task_context: string = ''")
     .Attr("vocabulary: string = ''")
-    .Attr("override_num_embeddings: int = -1")
     .Attr("cache_vectors_locally: bool = true")
     .Attr("num_special_embeddings: int = 3")
     .Attr("embedding_init: float = 1.0")
     .Attr("seed: int = 0")
     .Attr("seed2: int = 0")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      MatrixOutputShape(0, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 Reads word embeddings from an sstable of dist_belief.TokenEmbedding protos for
 every word specified in a text vocabulary file.
@@ -334,10 +264,6 @@ task_context: file path at which to read the task context, for its "word-map"
   input.  Exactly one of `task_context` or `vocabulary` must be specified.
 vocabulary: path to vocabulary file, which contains one unique word per line, in
   order.  Exactly one of `task_context` or `vocabulary` must be specified.
-override_num_embeddings: Number of rows in the returned embedding matrix.  If
-  override_num_embeddings is larger than 0, then the returned embedding matrix
-  has override_num_embeddings_ rows.  Otherwise, the number of rows of the
-  returned embedding matrix is |vocabulary| + num_special_embeddings.
 cache_vectors_locally: Whether to cache the vectors file to a local temp file
   before parsing it.  This greatly reduces initialization time when the vectors
   are stored remotely, but requires that "/tmp" has sufficient space.
@@ -360,11 +286,6 @@ REGISTER_OP("DocumentSource")
     .Attr("corpus_name: string='documents'")
     .Attr("batch_size: int")
     .SetIsStateful()
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      ScalarOutputShape(1, context);
-      return tensorflow::Status::OK();
-    })
     .Doc(R"doc(
 Reads documents from documents_path and outputs them.
 
@@ -380,9 +301,6 @@ REGISTER_OP("DocumentSink")
     .Attr("task_context: string=''")
     .Attr("task_context_str: string=''")
     .Attr("corpus_name: string='documents'")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Write documents to documents_path.
 
@@ -394,10 +312,6 @@ task_context_str: a task context in text format, used if task_context is empty.
 REGISTER_OP("SegmenterTrainingDataConstructor")
     .Input("documents: string")
     .Output("char_doc: string")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Constructs segmentation training data from documents with gold segmentation.
 
@@ -408,10 +322,6 @@ char_doc: a vector of documents as serialized protos.
 REGISTER_OP("CharTokenGenerator")
     .Input("documents: string")
     .Output("char_doc: string")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Converts token field of the input documents such that each token in the
 output doc is a utf-8 character from that doc's text.
@@ -427,10 +337,6 @@ REGISTER_OP("WellFormedFilter")
     .Attr("task_context_str: string=''")
     .Attr("corpus_name: string='documents'")
     .Attr("keep_malformed_documents: bool = False")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Removes sentences with malformed parse trees, i.e. they contain cycles.
 
@@ -447,10 +353,6 @@ REGISTER_OP("ProjectivizeFilter")
     .Attr("task_context_str: string=''")
     .Attr("corpus_name: string='documents'")
     .Attr("discard_non_projective: bool = False")
-    .SetShapeFn([](tensorflow::shape_inference::InferenceContext *context) {
-      VectorOutputShape(0, context);
-      return VectorInputShape(0, context);
-    })
     .Doc(R"doc(
 Modifies input parse trees to make them projective.
 

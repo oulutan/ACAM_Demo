@@ -17,7 +17,6 @@ r"""Runs a both a segmentation and parsing model on a CoNLL dataset.
 
 import re
 import time
-from absl import flags
 import tensorflow as tf
 
 from tensorflow.python.client import timeline
@@ -36,6 +35,7 @@ from syntaxnet import syntaxnet_ops
 from syntaxnet.ops import gen_parser_ops
 from syntaxnet.util import check
 
+flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(

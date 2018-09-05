@@ -31,18 +31,16 @@ class DigraphOpsTest(tf.test.TestCase):
                                     [3, 4]],
                                    [[3, 4],
                                     [2, 3],
-                                    [1, 2]]],
-                                  tf.float32)  # pyformat: disable
+                                    [1, 2]]], tf.float32)
       target_tokens = tf.constant([[[4, 5, 6],
                                     [5, 6, 7],
                                     [6, 7, 8]],
                                    [[6, 7, 8],
                                     [5, 6, 7],
-                                    [4, 5, 6]]],
-                                  tf.float32)  # pyformat: disable
+                                    [4, 5, 6]]], tf.float32)
       weights = tf.constant([[2, 3, 5],
                              [7, 11, 13]],
-                            tf.float32)  # pyformat: disable
+                            tf.float32)
 
       arcs = digraph_ops.ArcPotentialsFromTokens(source_tokens, target_tokens,
                                                  weights)
@@ -56,7 +54,7 @@ class DigraphOpsTest(tf.test.TestCase):
                             [803, 957, 1111]],
                            [[1111, 957, 803],  # reflected through the center
                             [815, 702, 589],
-                            [519, 447, 375]]])  # pyformat: disable
+                            [519, 447, 375]]])
 
   def testArcSourcePotentialsFromTokens(self):
     with self.test_session():
@@ -65,7 +63,7 @@ class DigraphOpsTest(tf.test.TestCase):
                              [6, 7, 8]],
                             [[6, 7, 8],
                              [5, 6, 7],
-                             [4, 5, 6]]], tf.float32)  # pyformat: disable
+                             [4, 5, 6]]], tf.float32)
       weights = tf.constant([2, 3, 5], tf.float32)
 
       arcs = digraph_ops.ArcSourcePotentialsFromTokens(tokens, weights)
@@ -75,7 +73,7 @@ class DigraphOpsTest(tf.test.TestCase):
                                          [73, 73, 73]],
                                         [[73, 73, 73],
                                          [63, 63, 63],
-                                         [53, 53, 53]]])  # pyformat: disable
+                                         [53, 53, 53]]])
 
   def testRootPotentialsFromTokens(self):
     with self.test_session():
@@ -85,17 +83,15 @@ class DigraphOpsTest(tf.test.TestCase):
                              [6, 7, 8]],
                             [[6, 7, 8],
                              [5, 6, 7],
-                             [4, 5, 6]]], tf.float32)  # pyformat: disable
-      weights_arc = tf.constant([[2, 3, 5],
-                                 [7, 11, 13]],
-                                tf.float32)  # pyformat: disable
-      weights_source = tf.constant([11, 10], tf.float32)
+                             [4, 5, 6]]], tf.float32)
+      weights = tf.constant([[2, 3, 5],
+                             [7, 11, 13]],
+                            tf.float32)
 
-      roots = digraph_ops.RootPotentialsFromTokens(root, tokens, weights_arc,
-                                                   weights_source)
+      roots = digraph_ops.RootPotentialsFromTokens(root, tokens, weights)
 
-      self.assertAllEqual(roots.eval(), [[406, 478, 550],
-                                         [550, 478, 406]])  # pyformat: disable
+      self.assertAllEqual(roots.eval(), [[375, 447, 519],
+                                         [519, 447, 375]])
 
   def testCombineArcAndRootPotentials(self):
     with self.test_session():
@@ -104,9 +100,9 @@ class DigraphOpsTest(tf.test.TestCase):
                            [3, 4, 5]],
                           [[3, 4, 5],
                            [2, 3, 4],
-                           [1, 2, 3]]], tf.float32)  # pyformat: disable
+                           [1, 2, 3]]], tf.float32)
       roots = tf.constant([[6, 7, 8],
-                           [8, 7, 6]], tf.float32)  # pyformat: disable
+                           [8, 7, 6]], tf.float32)
 
       potentials = digraph_ops.CombineArcAndRootPotentials(arcs, roots)
 
@@ -115,7 +111,7 @@ class DigraphOpsTest(tf.test.TestCase):
                                                [3, 4, 8]],
                                               [[8, 4, 5],
                                                [2, 7, 4],
-                                               [1, 2, 6]]])  # pyformat: disable
+                                               [1, 2, 6]]])
 
   def testLabelPotentialsFromTokens(self):
     with self.test_session():
@@ -124,12 +120,12 @@ class DigraphOpsTest(tf.test.TestCase):
                              [5, 6]],
                             [[6, 5],
                              [4, 3],
-                             [2, 1]]], tf.float32)  # pyformat: disable
+                             [2, 1]]], tf.float32)
 
 
       weights = tf.constant([[ 2,  3],
                              [ 5,  7],
-                             [11, 13]], tf.float32)  # pyformat: disable
+                             [11, 13]], tf.float32)
 
       labels = digraph_ops.LabelPotentialsFromTokens(tokens, weights)
 
@@ -140,7 +136,7 @@ class DigraphOpsTest(tf.test.TestCase):
                             [ 28,  67, 133]],
                            [[ 27,  65, 131],
                             [ 17,  41,  83],
-                            [  7,  17,  35]]])  # pyformat: disable
+                            [  7,  17,  35]]])
 
   def testLabelPotentialsFromTokenPairs(self):
     with self.test_session():
@@ -149,13 +145,13 @@ class DigraphOpsTest(tf.test.TestCase):
                               [5, 6]],
                              [[6, 5],
                               [4, 3],
-                              [2, 1]]], tf.float32)  # pyformat: disable
+                              [2, 1]]], tf.float32)
       targets = tf.constant([[[3, 4],
                               [5, 6],
                               [7, 8]],
                              [[8, 7],
                               [6, 5],
-                              [4, 3]]], tf.float32)  # pyformat: disable
+                              [4, 3]]], tf.float32)
 
 
       weights = tf.constant([[[ 2,  3],
@@ -163,7 +159,7 @@ class DigraphOpsTest(tf.test.TestCase):
                              [[11, 13],
                               [17, 19]],
                              [[23, 29],
-                              [31, 37]]], tf.float32)  # pyformat: disable
+                              [31, 37]]], tf.float32)
 
       labels = digraph_ops.LabelPotentialsFromTokenPairs(sources, targets,
                                                          weights)
@@ -175,114 +171,7 @@ class DigraphOpsTest(tf.test.TestCase):
                             [ 736, 2531, 5043]],
                            [[ 667, 2419, 4857],
                             [ 303, 1115, 2245],
-                            [  75,  291,  593]]])  # pyformat: disable
-
-  def testValidArcAndTokenMasks(self):
-    with self.test_session():
-
-      lengths = tf.constant([1, 2, 3], tf.int64)
-      max_length = 4
-      valid_arcs, valid_tokens = digraph_ops.ValidArcAndTokenMasks(
-          lengths, max_length)
-      self.assertAllEqual(valid_arcs.eval(),
-                          [[[1, 0, 0, 0],
-                            [0, 0, 0, 0],
-                            [0, 0, 0, 0],
-                            [0, 0, 0, 0]],
-                           [[1, 1, 0, 0],
-                            [1, 1, 0, 0],
-                            [0, 0, 0, 0],
-                            [0, 0, 0, 0]],
-                           [[1, 1, 1, 0],
-                            [1, 1, 1, 0],
-                            [1, 1, 1, 0],
-                            [0, 0, 0, 0]]])  # pyformat: disable
-      self.assertAllEqual(valid_tokens.eval(),
-                          [[1, 0, 0, 0],
-                           [1, 1, 0, 0],
-                           [1, 1, 1, 0]])  # pyformat: disable
-
-  def testLaplacianMatrixTree(self):
-    with self.test_session():
-
-      pad = 12345.6
-      arcs = tf.constant([[[  2, pad, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3, pad, pad],
-                           [  5,   7, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3,   5, pad],
-                           [  7,  11,  13, pad],
-                           [ 17,  19,  23, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3,   5,   7],
-                           [ 11,  13,  17,  19],
-                           [ 23,  29,  31,  37],
-                           [ 41,  43,  47,  53]]],
-                         tf.float32)  # pyformat: disable
-      lengths = tf.constant([1, 2, 3, 4], tf.int64)
-      laplacian = digraph_ops.LaplacianMatrix(lengths, arcs)
-      self.assertAllEqual(laplacian.eval(),
-                          [[[  2,   0,   0,   0],
-                            [  0,   1,   0,   0],
-                            [  0,   0,   1,   0],
-                            [  0,   0,   0,   1]],
-                           [[  2,  -3,   0,   0],
-                            [  7,   5,   0,   0],
-                            [  0,   0,   1,   0],
-                            [  0,   0,   0,   1]],
-                           [[  2,  -3,  -5,   0],
-                            [ 11,  20, -13,   0],
-                            [ 23, -19,  36,   0],
-                            [  0,   0,   0,   1]],
-                           [[  2,  -3,  -5,  -7],
-                            [ 13,  47, -17, -19],
-                            [ 31, -29,  89, -37],
-                            [ 53, -43, -47, 131]]])  # pyformat: disable
-
-  def testLaplacianMatrixForest(self):
-    with self.test_session():
-
-      pad = 12345.6
-      arcs = tf.constant([[[  2, pad, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3, pad, pad],
-                           [  5,   7, pad, pad],
-                           [pad, pad, pad, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3,   5, pad],
-                           [  7,  11,  13, pad],
-                           [ 17,  19,  23, pad],
-                           [pad, pad, pad, pad]],
-                          [[  2,   3,   5,   7],
-                           [ 11,  13,  17,  19],
-                           [ 23,  29,  31,  37],
-                           [ 41,  43,  47,  53]]],
-                         tf.float32)  # pyformat: disable
-      lengths = tf.constant([1, 2, 3, 4], tf.int64)
-      laplacian = digraph_ops.LaplacianMatrix(lengths, arcs, forest=True)
-      self.assertAllEqual(laplacian.eval(),
-                          [[[  2,   0,   0,   0],
-                            [  0,   1,   0,   0],
-                            [  0,   0,   1,   0],
-                            [  0,   0,   0,   1]],
-                           [[  5,  -3,   0,   0],
-                            [ -5,  12,   0,   0],
-                            [  0,   0,   1,   0],
-                            [  0,   0,   0,   1]],
-                           [[ 10,  -3,  -5,   0],
-                            [ -7,  31, -13,   0],
-                            [-17, -19,  59,   0],
-                            [  0,   0,   0,   1]],
-                           [[ 17,  -3,  -5,  -7],
-                            [-11,  60, -17, -19],
-                            [-23, -29, 120, -37],
-                            [-41, -43, -47, 184]]])  # pyformat: disable
+                            [  75,  291,  593]]])
 
 
 if __name__ == "__main__":

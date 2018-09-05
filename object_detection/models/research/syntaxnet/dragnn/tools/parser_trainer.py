@@ -21,8 +21,6 @@ import os
 import os.path
 import random
 import time
-from absl import app
-from absl import flags
 import tensorflow as tf
 
 from tensorflow.python.platform import gfile
@@ -42,6 +40,7 @@ from dragnn.python import sentence_io
 from dragnn.python import spec_builder
 from dragnn.python import trainer_lib
 
+flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('tf_master', '',
@@ -190,4 +189,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  tf.app.run()

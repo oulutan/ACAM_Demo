@@ -69,7 +69,7 @@ class DetectionModel(object):
 
     Args:
       num_classes: number of classes.  Note that num_classes *does not* include
-      background categories that might be implicitly predicted in various
+      background categories that might be implicitly be predicted in various
       implementations.
     """
     self._num_classes = num_classes
@@ -237,8 +237,7 @@ class DetectionModel(object):
                           groundtruth_classes_list,
                           groundtruth_masks_list=None,
                           groundtruth_keypoints_list=None,
-                          groundtruth_weights_list=None,
-                          groundtruth_is_crowd_list=None):
+                          groundtruth_weights_list=None):
     """Provide groundtruth tensors.
 
     Args:
@@ -261,8 +260,6 @@ class DetectionModel(object):
         missing keypoints should be encoded as NaN.
       groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape
         [num_boxes] containing weights for groundtruth boxes.
-      groundtruth_is_crowd_list: A list of 1-D tf.bool tensors of shape
-        [num_boxes] containing is_crowd annotations
     """
     self._groundtruth_lists[fields.BoxListFields.boxes] = groundtruth_boxes_list
     self._groundtruth_lists[
@@ -276,12 +273,9 @@ class DetectionModel(object):
     if groundtruth_keypoints_list:
       self._groundtruth_lists[
           fields.BoxListFields.keypoints] = groundtruth_keypoints_list
-    if groundtruth_is_crowd_list:
-      self._groundtruth_lists[
-          fields.BoxListFields.is_crowd] = groundtruth_is_crowd_list
 
   @abstractmethod
-  def restore_map(self, fine_tune_checkpoint_type='detection'):
+  def restore_map(self, from_detection_checkpoint=True):
     """Returns a map of variables to load from a foreign checkpoint.
 
     Returns a map of variable names to load from a checkpoint to variables in
@@ -293,10 +287,9 @@ class DetectionModel(object):
     the num_classes parameter.
 
     Args:
-      fine_tune_checkpoint_type: whether to restore from a full detection
+      from_detection_checkpoint: whether to restore from a full detection
         checkpoint (with compatible variable names) or to restore from a
         classification checkpoint for initialization prior to training.
-        Valid values: `detection`, `classification`. Default 'detection'.
 
     Returns:
       A dict mapping variable names (to load from a checkpoint) to variables in

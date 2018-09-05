@@ -19,13 +19,13 @@ from __future__ import division
 from __future__ import print_function
 
 
-from absl import flags
 import numpy as np
 
 import tensorflow as tf
+
 import train
 
-FLAGS = flags.FLAGS
+FLAGS = tf.flags.FLAGS
 mock = tf.test.mock
 
 

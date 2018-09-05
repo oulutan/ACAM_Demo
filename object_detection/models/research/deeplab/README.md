@@ -28,26 +28,13 @@ features:
     convolution to trade-off precision and runtime.
 
 If you find the code useful for your research, please consider citing our latest
-works:
-
-*   DeepLabv3+:
+work:
 
 ```
-@inproceedings{deeplabv3plus2018,
+@article{deeplabv3plus2018,
   title={Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation},
   author={Liang-Chieh Chen and Yukun Zhu and George Papandreou and Florian Schroff and Hartwig Adam},
-  booktitle={ECCV},
-  year={2018}
-}
-```
-
-*   MobileNetv2:
-
-```
-@inproceedings{mobilenetv22018,
-  title={MobileNetV2: Inverted Residuals and Linear Bottlenecks},
-  author={Mark Sandler and Andrew Howard and Menglong Zhu and Andrey Zhmoginov and Liang-Chieh Chen},
-  booktitle={CVPR},
+  journal={arXiv:1802.02611},
   year={2018}
 }
 ```
@@ -55,7 +42,8 @@ works:
 In the current implementation, we support adopting the following network
 backbones:
 
-1.  MobileNetv2 [8]: A fast network structure designed for mobile devices.
+1.  MobileNetv2 [8]: A fast network structure designed for mobile devices. **We
+    will provide MobileNetv2 support in the next update. Please stay tuned.**
 
 2.  Xception [9, 10]: A powerful network structure intended for server-side
     deployment.
@@ -78,20 +66,18 @@ Some segmentation results on Flickr images:
 *   Liang-Chieh Chen, github: [aquariusjay](https://github.com/aquariusjay)
 *   YuKun Zhu, github: [yknzhu](https://github.com/YknZhu)
 *   George Papandreou, github: [gpapan](https://github.com/gpapan)
-*   Hui Hui, github: [huihui-personal](https://github.com/huihui-personal)
 
 ## Tables of Contents
 
 Demo:
 
-*   <a href='https://colab.sandbox.google.com/github/tensorflow/models/blob/master/research/deeplab/deeplab_demo.ipynb'>Colab notebook for off-the-shelf inference.</a><br>
+*   <a href='deeplab_demo.ipynb'>Jupyter notebook for off-the-shelf inference.</a><br>
 
 Running:
 
 *   <a href='g3doc/installation.md'>Installation.</a><br>
 *   <a href='g3doc/pascal.md'>Running DeepLab on PASCAL VOC 2012 semantic segmentation dataset.</a><br>
 *   <a href='g3doc/cityscapes.md'>Running DeepLab on Cityscapes semantic segmentation dataset.</a><br>
-*   <a href='g3doc/ade20k.md'>Running DeepLab on ADE20K semantic segmentation dataset.</a><br>
 
 Models:
 
@@ -105,37 +91,13 @@ Misc:
 
 To get help with issues you may encounter while using the DeepLab Tensorflow
 implementation, create a new question on
-[StackOverflow](https://stackoverflow.com/) with the tag "tensorflow".
+[StackOverflow](https://stackoverflow.com/) with the tags "tensorflow" and
+"deeplab".
 
 Please report bugs (i.e., broken code, not usage questions) to the
 tensorflow/models GitHub [issue
 tracker](https://github.com/tensorflow/models/issues), prefixing the issue name
 with "deeplab".
-
-## Change Logs
-
-### May 26, 2018
-
-Updated ADE20K pretrained checkpoint.
-
-
-### May 18, 2018
-1.  Added builders for ResNet-v1 and Xception model variants.
-1.  Added ADE20K support, including colormap and pretrained Xception_65 checkpoint.
-1.  Fixed a bug on using non-default depth_multiplier for MobileNet-v2.
-
-
-### March 22, 2018
-
-Released checkpoints using MobileNet-V2 as network backbone and pretrained on
-PASCAL VOC 2012 and Cityscapes.
-
-
-### March 5, 2018
-
-First release of DeepLab in TensorFlow including deeper Xception network
-backbone. Included chekcpoints that have been pretrained on PASCAL VOC 2012
-and Cityscapes.
 
 ## References
 
@@ -155,8 +117,8 @@ and Cityscapes.
     [[link]](http://arxiv.org/abs/1706.05587). arXiv: 1706.05587, 2017.
 
 4.  **Encoder-Decoder with Atrous Separable Convolution for Semantic Image Segmentation**<br />
-    Liang-Chieh Chen, Yukun Zhu, George Papandreou, Florian Schroff, Hartwig Adam.<br />
-    [[link]](https://arxiv.org/abs/1802.02611). In ECCV, 2018.
+    Liang-Chieh Chen, Yukun Zhu, George Papandreou, Florian Schroff, Hartwig Adam. arXiv: 1802.02611.<br />
+    [[link]](https://arxiv.org/abs/1802.02611). arXiv: 1802.02611, 2018.
 
 5.  **ParseNet: Looking Wider to See Better**<br />
     Wei Liu, Andrew Rabinovich, Alexander C Berg<br />
@@ -170,9 +132,9 @@ and Cityscapes.
     Sergey Ioffe, Christian Szegedy <br />
     [[link]](https://arxiv.org/abs/1502.03167). In ICML, 2015.
 
-8.  **MobileNetV2: Inverted Residuals and Linear Bottlenecks**<br />
+8.  **Inverted Residuals and Linear Bottlenecks: Mobile Networks for Classification, Detection and Segmentation**<br />
     Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, Liang-Chieh Chen<br />
-    [[link]](https://arxiv.org/abs/1801.04381). In CVPR, 2018.
+    [[link]](https://arxiv.org/abs/1801.04381). arXiv:1801.04381, 2018.
 
 9.  **Xception: Deep Learning with Depthwise Separable Convolutions**<br />
     François Chollet<br />

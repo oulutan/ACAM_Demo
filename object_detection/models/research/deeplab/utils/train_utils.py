@@ -14,10 +14,7 @@
 # ==============================================================================
 """Utility functions for training."""
 
-import six
-
 import tensorflow as tf
-from deeplab.core import preprocess_utils
 
 slim = tf.contrib.slim
 
@@ -47,7 +44,7 @@ def add_softmax_cross_entropy_loss_for_each_scale(scales_to_logits,
   if labels is None:
     raise ValueError('No label for softmax cross entropy loss.')
 
-  for scale, logits in six.iteritems(scales_to_logits):
+  for scale, logits in scales_to_logits.iteritems():
     loss_scope = None
     if scope:
       loss_scope = '%s_%s' % (scope, scale)
@@ -55,16 +52,12 @@ def add_softmax_cross_entropy_loss_for_each_scale(scales_to_logits,
     if upsample_logits:
       # Label is not downsampled, and instead we upsample logits.
       logits = tf.image.resize_bilinear(
-          logits,
-          preprocess_utils.resolve_shape(labels, 4)[1:3],
-          align_corners=True)
+          logits, tf.shape(labels)[1:3], align_corners=True)
       scaled_labels = labels
     else:
       # Label is downsampled to the same size as logits.
       scaled_labels = tf.image.resize_nearest_neighbor(
-          labels,
-          preprocess_utils.resolve_shape(logits, 4)[1:3],
-          align_corners=True)
+          labels, tf.shape(logits)[1:3], align_corners=True)
 
     scaled_labels = tf.reshape(scaled_labels, shape=[-1])
     not_ignore_mask = tf.to_float(tf.not_equal(scaled_labels,
@@ -112,12 +105,10 @@ def get_model_init_fn(train_logdir,
 
   variables_to_restore = slim.get_variables_to_restore(exclude=exclude_list)
 
-  if variables_to_restore:
-    return slim.assign_from_checkpoint_fn(
-        tf_initial_checkpoint,
-        variables_to_restore,
-        ignore_missing_vars=ignore_missing_vars)
-  return None
+  return slim.assign_from_checkpoint_fn(
+      tf_initial_checkpoint,
+      variables_to_restore,
+      ignore_missing_vars=ignore_missing_vars)
 
 
 def get_model_gradient_multipliers(last_layers, last_layer_gradient_multiplier):

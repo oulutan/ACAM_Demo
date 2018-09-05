@@ -37,9 +37,8 @@ cc_library(
         ":input_batch_cache",
         "//dragnn/components/util:bulk_feature_extractor",
         "//dragnn/core/interfaces:component",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:spec_proto_cc",
-        "//dragnn/protos:trace_proto_cc",
+        "//dragnn/protos:spec_proto",
+        "//dragnn/protos:trace_proto",
     ],
 )
 
@@ -52,10 +51,9 @@ cc_library(
         ":index_translator",
         ":input_batch_cache",
         "//dragnn/components/util:bulk_feature_extractor",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:data_proto_cc",
-        "//dragnn/protos:spec_proto_cc",
-        "//dragnn/protos:trace_proto_cc",
+        "//dragnn/protos:data_proto",
+        "//dragnn/protos:spec_proto",
+        "//dragnn/protos:trace_proto",
         "//syntaxnet:base",
         "//syntaxnet:registry",
     ],
@@ -69,7 +67,7 @@ cc_library(
         ":component_registry",
         ":compute_session",
         ":compute_session_impl",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
     ],
 )
@@ -127,13 +125,10 @@ cc_test(
         "//dragnn/components/util:bulk_feature_extractor",
         "//dragnn/core/interfaces:component",
         "//dragnn/core/interfaces:input_batch",
-        "//dragnn/core/test:fake_component_base",
         "//dragnn/core/test:generic",
         "//dragnn/core/test:mock_component",
         "//dragnn/core/test:mock_transition_state",
-        "//dragnn/core/util:label",
         "//syntaxnet:base",
-        "@org_tensorflow//tensorflow/core:test",
     ],
 )
 
@@ -187,24 +182,14 @@ cc_test(
 # Tensorflow op kernel BUILD rules.
 
 load(
-    "@org_tensorflow//tensorflow:tensorflow.bzl",
+    "//dragnn:tensorflow_ops.bzl",
     "tf_gen_op_libs",
     "tf_gen_op_wrapper_py",
     "tf_kernel_library",
 )
 
-cc_library(
-    name = "shape_helpers",
-    hdrs = ["ops/shape_helpers.h"],
-    deps = [
-        "//syntaxnet:shape_helpers",
-        "@org_tensorflow//tensorflow/core:framework_headers_lib",
-    ],
-)
-
 tf_gen_op_libs(
     op_lib_names = ["dragnn_ops"],
-    deps = [":shape_helpers"],
 )
 
 tf_gen_op_wrapper_py(
@@ -214,7 +199,6 @@ tf_gen_op_wrapper_py(
 
 tf_gen_op_libs(
     op_lib_names = ["dragnn_bulk_ops"],
-    deps = [":shape_helpers"],
 )
 
 tf_gen_op_wrapper_py(
@@ -247,10 +231,8 @@ cc_library(
         ":compute_session_op",
         ":compute_session_pool",
         ":resource_container",
-        ":shape_helpers",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:data_proto_cc",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:data_proto",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
         "@org_tensorflow//third_party/eigen3",
     ],
@@ -266,8 +248,6 @@ cc_library(
     deps = [
         ":compute_session_op",
         ":resource_container",
-        ":shape_helpers",
-        "//dragnn/core/util:label",
         "//syntaxnet:base",
         "@org_tensorflow//third_party/eigen3",
     ],
@@ -289,10 +269,8 @@ tf_kernel_library(
         ":compute_session_op",
         ":compute_session_pool",
         ":resource_container",
-        ":shape_helpers",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:data_proto_cc",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:data_proto",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
         "@org_tensorflow//third_party/eigen3",
     ],
@@ -311,10 +289,8 @@ tf_kernel_library(
         ":compute_session_op",
         ":compute_session_pool",
         ":resource_container",
-        ":shape_helpers",
         "//dragnn/components/util:bulk_feature_extractor",
-        "//dragnn/core/util:label",
-        "//dragnn/protos:spec_proto_cc",
+        "//dragnn/protos:spec_proto",
         "//syntaxnet:base",
         "@org_tensorflow//tensorflow/core:protos_all_cc",
         "@org_tensorflow//third_party/eigen3",
@@ -333,7 +309,6 @@ cc_test(
         ":resource_container",
         "//dragnn/core/test:generic",
         "//dragnn/core/test:mock_compute_session",
-        "//dragnn/core/util:label",
         "//syntaxnet:base",
         "//syntaxnet:test_main",
         "@org_tensorflow//tensorflow/core:protos_all_cc",
@@ -352,7 +327,6 @@ cc_test(
         ":resource_container",
         "//dragnn/components/util:bulk_feature_extractor",
         "//dragnn/core/test:mock_compute_session",
-        "//dragnn/core/util:label",
         "//syntaxnet:base",
         "//syntaxnet:test_main",
         "@org_tensorflow//tensorflow/core/kernels:ops_testutil",

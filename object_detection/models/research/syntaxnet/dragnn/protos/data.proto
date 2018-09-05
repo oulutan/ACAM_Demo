@@ -1,5 +1,4 @@
-// DRAGNN data proto.
-
+// DRAGNN data proto. See go/dragnn-design for more information.
 
 syntax = "proto2";
 

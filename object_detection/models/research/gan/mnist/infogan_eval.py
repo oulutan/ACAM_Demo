@@ -26,8 +26,6 @@ from __future__ import division
 from __future__ import print_function
 
 
-from absl import app
-from absl import flags
 import numpy as np
 
 import tensorflow as tf
@@ -36,6 +34,7 @@ import data_provider
 import networks
 import util
 
+flags = tf.flags
 tfgan = tf.contrib.gan
 
 
@@ -157,4 +156,4 @@ def _get_write_image_ops(eval_dir, filename, images):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  tf.app.run()

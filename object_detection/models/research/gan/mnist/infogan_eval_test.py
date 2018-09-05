@@ -19,15 +19,15 @@ from __future__ import division
 from __future__ import print_function
 
 
-from absl.testing import absltest
+import tensorflow as tf
 import infogan_eval
 
 
-class MnistInfoGANEvalTest(absltest.TestCase):
+class MnistInfoGANEvalTest(tf.test.TestCase):
 
   def test_build_graph(self):
     infogan_eval.main(None, run_eval_loop=False)
 
 
 if __name__ == '__main__':
-  absltest.main()
+  tf.test.main()

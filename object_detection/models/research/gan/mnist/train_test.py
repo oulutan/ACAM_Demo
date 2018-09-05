@@ -19,18 +19,16 @@ from __future__ import division
 from __future__ import print_function
 
 
-from absl import flags
-from absl.testing import parameterized
 import numpy as np
 
 import tensorflow as tf
 import train
 
-FLAGS = flags.FLAGS
+FLAGS = tf.flags.FLAGS
 mock = tf.test.mock
 
 
-class TrainTest(tf.test.TestCase, parameterized.TestCase):
+class TrainTest(tf.test.TestCase):
 
   @mock.patch.object(train, 'data_provider', autospec=True)
   def test_run_one_train_step(self, mock_data_provider):
@@ -49,11 +47,7 @@ class TrainTest(tf.test.TestCase, parameterized.TestCase):
 
     train.main(None)
 
-  @parameterized.named_parameters(
-      ('Unconditional', 'unconditional'),
-      ('Conditional', 'conditional'),
-      ('InfoGAN', 'infogan'))
-  def test_build_graph(self, gan_type):
+  def _test_build_graph_helper(self, gan_type):
     FLAGS.max_number_of_steps = 0
     FLAGS.gan_type = gan_type
 
@@ -66,6 +60,15 @@ class TrainTest(tf.test.TestCase, parameterized.TestCase):
       mock_data_provider.provide_data.return_value = (
           mock_imgs, mock_lbls, None)
       train.main(None)
+
+  def test_build_graph_unconditional(self):
+    self._test_build_graph_helper('unconditional')
+
+  def test_build_graph_conditional(self):
+    self._test_build_graph_helper('conditional')
+
+  def test_build_graph_infogan(self):
+    self._test_build_graph_helper('infogan')
 
 if __name__ == '__main__':
   tf.test.main()

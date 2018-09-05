@@ -16,19 +16,30 @@
 import os
 import tensorflow as tf
 
+from tensorflow.python.framework import test_util
+from tensorflow.python.platform import googletest
+
 from dragnn.python import dragnn_ops
 
 from dragnn.python import sentence_io
 from syntaxnet import sentence_pb2
-from syntaxnet import test_flags
+
+FLAGS = tf.app.flags.FLAGS
 
 
-class ConllSentenceReaderTest(tf.test.TestCase):
+def setUpModule():
+  if not hasattr(FLAGS, 'test_srcdir'):
+    FLAGS.test_srcdir = ''
+  if not hasattr(FLAGS, 'test_tmpdir'):
+    FLAGS.test_tmpdir = tf.test.get_temp_dir()
+
+
+class ConllSentenceReaderTest(test_util.TensorFlowTestCase):
 
   def setUp(self):
     # This dataset contains 54 sentences.
     self.filepath = os.path.join(
-        test_flags.source_root(),
+        FLAGS.test_srcdir,
         'syntaxnet/testdata/mini-training-set')
     self.batch_size = 20
 
@@ -71,4 +82,4 @@ class ConllSentenceReaderTest(tf.test.TestCase):
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  googletest.main()

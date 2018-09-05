@@ -18,8 +18,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from absl import app
-from absl import flags
 import tensorflow as tf
 
 import data_provider
@@ -27,7 +25,8 @@ import networks
 import util
 
 
-FLAGS = flags.FLAGS
+flags = tf.flags
+FLAGS = tf.flags.FLAGS
 tfgan = tf.contrib.gan
 
 flags.DEFINE_string('master', '', 'Name of the TensorFlow master to use.')
@@ -66,13 +65,6 @@ flags.DEFINE_integer('max_number_of_evaluations', None,
 
 flags.DEFINE_boolean('write_to_disk', True, 'If `True`, run images to disk.')
 
-flags.DEFINE_integer(
-    'inter_op_parallelism_threads', 0,
-    'Number of threads to use for inter-op parallelism. If left as default value of 0, the system will pick an appropriate number.')
-
-flags.DEFINE_integer(
-    'intra_op_parallelism_threads', 0,
-    'Number of threads to use for intra-op parallelism. If left as default value of 0, the system will pick an appropriate number.')
 
 def main(_, run_eval_loop=True):
   # Fetch and generate images to run through Inception.
@@ -126,16 +118,12 @@ def main(_, run_eval_loop=True):
 
   # For unit testing, use `run_eval_loop=False`.
   if not run_eval_loop: return
-  sess_config = tf.ConfigProto(
-        inter_op_parallelism_threads=FLAGS.inter_op_parallelism_threads,
-        intra_op_parallelism_threads=FLAGS.intra_op_parallelism_threads)
   tf.contrib.training.evaluate_repeatedly(
       FLAGS.checkpoint_dir,
       master=FLAGS.master,
       hooks=[tf.contrib.training.SummaryAtEndHook(FLAGS.eval_dir),
              tf.contrib.training.StopAfterNEvalsHook(1)],
       eval_ops=image_write_ops,
-      config=sess_config,
       max_number_of_evaluations=FLAGS.max_number_of_evaluations)
 
 
@@ -167,4 +155,4 @@ def _get_generated_data(num_images_generated, conditional_eval, num_classes):
 
 
 if __name__ == '__main__':
-  app.run(main)
+  tf.app.run()

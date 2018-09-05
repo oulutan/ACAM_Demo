@@ -17,7 +17,6 @@
 #include "dragnn/core/compute_session_pool.h"
 #include "dragnn/core/resource_container.h"
 #include "dragnn/core/test/mock_compute_session.h"
-#include "dragnn/core/util/label.h"
 
 #include <gmock/gmock.h>
 #include "tensorflow/core/framework/fake_input.h"
@@ -625,16 +624,13 @@ TEST_F(DragnnBulkOpKernelsTest, BulkAdvanceFromOracle) {
       .WillOnce(Return(true));
   EXPECT_CALL(*mock_session, AdvanceFromOracle(kComponentName))
       .Times(kNumSteps);
-
-  const std::vector<std::vector<std::vector<std::vector<Label>>>> gold_labels{
-      {{{{1, 1.f}}}, {{{1, 1.f}}}, {{{1, 1.f}}}},
-      {{{{2, 1.f}}}, {{{2, 1.f}}}, {{{2, 1.f}}}},
-      {{{{3, 1.f}}}, {{{3, 1.f}}}, {{{3, 1.f}}}},
+  const vector<vector<vector<int32>>> gold = {
+      {{1}, {1}, {1}}, {{2}, {2}, {2}}, {{3}, {3}, {3}},
   };
   EXPECT_CALL(*mock_session, EmitOracleLabels(kComponentName))
-      .WillOnce(Return(gold_labels[0]))
-      .WillOnce(Return(gold_labels[1]))
-      .WillOnce(Return(gold_labels[2]));
+      .WillOnce(Return(gold[0]))
+      .WillOnce(Return(gold[1]))
+      .WillOnce(Return(gold[2]));
   EXPECT_CALL(*mock_session, BeamSize(kComponentName)).WillOnce(Return(1));
   EXPECT_CALL(*mock_session, BatchSize(kComponentName))
       .WillOnce(Return(kNumItems));

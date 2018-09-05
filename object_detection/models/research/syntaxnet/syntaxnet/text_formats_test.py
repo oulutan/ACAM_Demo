@@ -22,19 +22,26 @@ import tensorflow as tf
 
 import syntaxnet.load_parser_ops
 
+from tensorflow.python.framework import test_util
+from tensorflow.python.platform import googletest
 from tensorflow.python.platform import tf_logging as logging
 
 from syntaxnet import sentence_pb2
 from syntaxnet import task_spec_pb2
-from syntaxnet import test_flags
 from syntaxnet.ops import gen_parser_ops
 
+FLAGS = tf.app.flags.FLAGS
 
-class TextFormatsTest(tf.test.TestCase):
+
+class TextFormatsTest(test_util.TensorFlowTestCase):
 
   def setUp(self):
-    self.corpus_file = os.path.join(test_flags.temp_dir(), 'documents.conll')
-    self.context_file = os.path.join(test_flags.temp_dir(), 'context.pbtxt')
+    if not hasattr(FLAGS, 'test_srcdir'):
+      FLAGS.test_srcdir = ''
+    if not hasattr(FLAGS, 'test_tmpdir'):
+      FLAGS.test_tmpdir = tf.test.get_temp_dir()
+    self.corpus_file = os.path.join(FLAGS.test_tmpdir, 'documents.conll')
+    self.context_file = os.path.join(FLAGS.test_tmpdir, 'context.pbtxt')
 
   def AddInput(self, name, file_pattern, record_format, context):
     inp = context.input.add()
@@ -53,8 +60,7 @@ class TextFormatsTest(tf.test.TestCase):
     for name in ('word-map', 'lcword-map', 'tag-map', 'category-map',
                  'label-map', 'prefix-table', 'suffix-table',
                  'tag-to-category'):
-      self.AddInput(name, os.path.join(test_flags.temp_dir(), name), '',
-                    context)
+      self.AddInput(name, os.path.join(FLAGS.test_tmpdir, name), '', context)
     logging.info('Writing context to: %s', self.context_file)
     with open(self.context_file, 'w') as f:
       f.write(str(context))
@@ -248,4 +254,4 @@ token {
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  googletest.main()

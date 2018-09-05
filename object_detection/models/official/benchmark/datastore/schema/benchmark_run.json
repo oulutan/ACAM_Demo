@@ -15,13 +15,7 @@
     "description": "The date when the test of the model is started",
     "mode": "REQUIRED",
     "name": "run_date",
-    "type": "TIMESTAMP"
-  },
-  {
-    "description": "The unique name for a test by the combination of key parameters, eg batch size, num of GPU, etc. It is hardware independent.",
-    "mode": "NULLABLE",
-    "name": "test_id",
-    "type": "STRING"
+    "type": "DATETIME"
   },
   {
     "description": "The tensorflow version information.",
@@ -36,18 +30,6 @@
         "description": "Git Hash of the tensorflow",
         "mode": "NULLABLE",
         "name": "git_hash",
-        "type": "STRING"
-      },
-      {
-        "description": "The channel of the tensorflow binary, eg, nightly, RC, final, custom.",
-        "mode": "NULLABLE",
-        "name": "channel",
-        "type": "STRING"
-      },
-      {
-        "description": "Identify anything special about the build, eg CUDA 10, NCCL, MKL, etc.",
-        "mode": "NULLABLE",
-        "name": "build_type",
         "type": "STRING"
       }
     ],
@@ -76,7 +58,7 @@
     "type": "RECORD"
   },
   {
-    "description": "Environment variables when the benchmark run is executed.",
+    "description": "Enviornment variables when the benchmark run is executed.",
     "fields": [
       {
         "description": "The name of the variable.",
@@ -92,65 +74,45 @@
       }
     ],
     "mode": "REPEATED",
-    "name": "environment_variable",
+    "name": "enviornment_variable",
     "type": "RECORD"
   },
   {
-    "description": "TF Environment variables when the benchmark run is executed.",
+    "description": "The list of hyperparameters of the model.",
     "fields": [
       {
-        "description": "The name of the variable.",
+        "description": "The name of the hyperparameter.",
         "mode": "REQUIRED",
         "name": "name",
         "type": "STRING"
       },
       {
-        "description": "The value of the variable.",
-        "mode": "NULLABLE",
-        "name": "value",
-        "type": "STRING"
-      }
-    ],
-    "mode": "REPEATED",
-    "name": "tensorflow_environment_variables",
-    "type": "RECORD"
-  },
-  {
-    "description": "The list of parameters run with the model. It could contain hyperparameters or others.",
-    "fields": [
-      {
-        "description": "The name of the parameter.",
-        "mode": "REQUIRED",
-        "name": "name",
-        "type": "STRING"
-      },
-      {
-        "description": "The string value of the parameter.",
+        "description": "The string value of the hyperparameter.",
         "mode": "NULLABLE",
         "name": "string_value",
         "type": "STRING"
       },
       {
-        "description": "The bool value of the parameter.",
+        "description": "The bool value of the hyperparameter.",
         "mode": "NULLABLE",
         "name": "bool_value",
         "type": "STRING"
       },
       {
-        "description": "The int/long value of the parameter.",
+        "description": "The int/long value of the hyperparameter.",
         "mode": "NULLABLE",
         "name": "long_value",
         "type": "INTEGER"
       },
       {
-        "description": "The double/float value of parameter.",
+        "description": "The double/float value of hyperparameter.",
         "mode": "NULLABLE",
         "name": "float_value",
         "type": "FLOAT"
       }
     ],
     "mode": "REPEATED",
-    "name": "run_parameters",
+    "name": "hyperparameter",
     "type": "RECORD"
   },
   {
@@ -186,12 +148,6 @@
         "type": "RECORD"
       }
     ]
-  },
-  {
-    "description": "Used to differentiate from AWS, GCE or DGX-1 at a high level",
-    "mode": "NULLABLE",
-    "name": "test_environment",
-    "type": "STRING"
   },
   {
     "description": "The machine configuration of the benchmark run.",

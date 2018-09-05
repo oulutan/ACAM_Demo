@@ -20,25 +20,32 @@ import os.path
 import time
 import tensorflow as tf
 
+from tensorflow.python.framework import test_util
+from tensorflow.python.platform import googletest
 from tensorflow.python.platform import tf_logging as logging
 
 from syntaxnet import structured_graph_builder
-from syntaxnet import test_flags
 from syntaxnet.ops import gen_parser_ops
 
+FLAGS = tf.app.flags.FLAGS
+if not hasattr(FLAGS, 'test_srcdir'):
+  FLAGS.test_srcdir = ''
+if not hasattr(FLAGS, 'test_tmpdir'):
+  FLAGS.test_tmpdir = tf.test.get_temp_dir()
 
-class ParsingReaderOpsTest(tf.test.TestCase):
+
+class ParsingReaderOpsTest(test_util.TensorFlowTestCase):
 
   def setUp(self):
     # Creates a task context with the correct testing paths.
-    initial_task_context = os.path.join(test_flags.source_root(),
+    initial_task_context = os.path.join(FLAGS.test_srcdir,
                                         'syntaxnet/'
                                         'testdata/context.pbtxt')
-    self._task_context = os.path.join(test_flags.temp_dir(), 'context.pbtxt')
+    self._task_context = os.path.join(FLAGS.test_tmpdir, 'context.pbtxt')
     with open(initial_task_context, 'r') as fin:
       with open(self._task_context, 'w') as fout:
-        fout.write(fin.read().replace('SRCDIR', test_flags.source_root())
-                   .replace('OUTPATH', test_flags.temp_dir()))
+        fout.write(fin.read().replace('SRCDIR', FLAGS.test_srcdir)
+                   .replace('OUTPATH', FLAGS.test_tmpdir))
 
     # Creates necessary term maps.
     with self.test_session() as sess:
@@ -218,4 +225,4 @@ class ParsingReaderOpsTest(tf.test.TestCase):
 
 
 if __name__ == '__main__':
-  tf.test.main()
+  googletest.main()

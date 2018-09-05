@@ -16,23 +16,20 @@
 #ifndef DRAGNN_CORE_COMPUTE_SESSION_IMPL_H_
 #define DRAGNN_CORE_COMPUTE_SESSION_IMPL_H_
 
-#include <map>
 #include <memory>
 
 #include "dragnn/components/util/bulk_feature_extractor.h"
 #include "dragnn/core/compute_session.h"
 #include "dragnn/core/index_translator.h"
 #include "dragnn/core/input_batch_cache.h"
-#include "dragnn/core/util/label.h"
 #include "dragnn/protos/data.pb.h"
 #include "dragnn/protos/spec.pb.h"
 #include "dragnn/protos/trace.pb.h"
 
-
 namespace syntaxnet {
 namespace dragnn {
 
-class ComputeSessionImpl final : public ComputeSession {
+class ComputeSessionImpl : public ComputeSession {
  public:
   // Creates a ComputeSessionImpl with the provided component builder function.
   ComputeSessionImpl(
@@ -80,7 +77,7 @@ class ComputeSessionImpl final : public ComputeSession {
   std::vector<LinkFeatures> GetTranslatedLinkFeatures(
       const string &component_name, int channel_id) override;
 
-  std::vector<std::vector<std::vector<Label>>> EmitOracleLabels(
+  std::vector<std::vector<int>> EmitOracleLabels(
       const string &component_name) override;
 
   bool IsTerminal(const string &component_name) override;
@@ -94,8 +91,6 @@ class ComputeSessionImpl final : public ComputeSession {
   void SetInputData(const std::vector<string> &data) override;
 
   void SetInputBatchCache(std::unique_ptr<InputBatchCache> batch) override;
-
-  InputBatchCache *GetInputBatchCache() override;
 
   void ResetSession() override;
 
@@ -113,11 +108,6 @@ class ComputeSessionImpl final : public ComputeSession {
   Component *GetReadiedComponent(const string &component_name) const override;
 
  private:
-  // Mapping from Keys to Values.
-  template <class Key, class Value>
-  using Mapping =  std::map<Key, Value>;
-
-
   // Get a given component. Fails if the component is not found.
   Component *GetComponent(const string &component_name) const;
 
@@ -134,11 +124,11 @@ class ComputeSessionImpl final : public ComputeSession {
 
   // Holds all of the components owned by this ComputeSession, associated with
   // their names in the MasterSpec.
-  Mapping<string, std::unique_ptr<Component>> components_;
+  std::map<string, std::unique_ptr<Component>> components_;
 
   // Holds a vector of translators for each component, indexed by the name
   // of the component they belong to.
-  Mapping<string, std::vector<IndexTranslator *>> translators_;
+  std::map<string, std::vector<IndexTranslator *>> translators_;
 
   // Holds ownership of all the IndexTranslators for this compute session.
   std::vector<std::unique_ptr<IndexTranslator>> owned_translators_;
@@ -146,7 +136,7 @@ class ComputeSessionImpl final : public ComputeSession {
   // The predecessor component for every component.
   // If a component is not in this map, it has no predecessor component and
   // will have its beam initialized without any data from other components.
-  Mapping<Component *, Component *> predecessors_;
+  std::map<Component *, Component *> predecessors_;
 
   // Holds the current input data for this ComputeSession.
   std::unique_ptr<InputBatchCache> input_data_;
