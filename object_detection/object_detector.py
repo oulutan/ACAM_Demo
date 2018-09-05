@@ -62,10 +62,12 @@ class Object_Detector():
 
 
 class Tracker():
-    def __init__(self, timesteps=32):
+    def __init__(self):
         self.active_actors = []
         self.inactive_actors = []
         self.actor_no = 0
+        self.frame_history = []
+        self.timesteps = 32
 
     def update_tracker(self, detection_info, frame):
         # filter out non-persons or less than threshold
@@ -75,7 +77,7 @@ class Tracker():
         indices = np.logical_and(scores > score_th, classes == 1)
         filtered_boxes, filtered_scores = boxes[indices], scores[indices]
 
-        IoU_th = 0.5 
+        IoU_th = 0.4
         matched_indices = []
         lost_actors = []
         for aa in range(len(self.active_actors)):
@@ -114,9 +116,33 @@ class Tracker():
             self.actor_no += 1
             self.active_actors.append(actor_info)
 
-def get_roi_with_context(box, frame, box_size):
-    top1, left1, bottom1, right1 = box
-    area = (right1 - left1) * (bottom1 - top1)
+        if len(self.frame_history) == 32:
+            del self.frame_history[0]
+            self.frame_history.append(frame)
+        else:
+            self.frame_history.append(frame)
+        
+    def crop_person_tube(self, actor_id, box_size=[400,400]):
+        actor_info = self.active_actors[actor_id]
+        boxes = actor_info['all_boxes']
+        if actor_info['length'] < self.timesteps:
+            recent_boxes = boxes
+        else:
+            recent_boxes = boxes[-self.timesteps:]
+        H,W,C = self.frame_history[-1].shape
+        mid_box = recent_boxes[len(recent_boxes)//2]
+
+        tube = np.zeros([self.timesteps] + box_size + [3])
+        for rr in range(len(recent_boxes)):
+            cur_box = recent_boxes[rr]
+            cur_frame = self.frame_history[rr]
+            top, left, bottom, right = cur_box
+            top_ind, bottom_ind = int(top * H), int(bottom * H)
+            left_ind, right_ind = int(left * W), int(right * W)
+            cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
+            tube[rr,:,:,:] = cv2.resize(cur_image_crop, box_size)
+
+        return tube, mid_box
 
 
         
