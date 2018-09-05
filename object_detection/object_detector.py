@@ -60,8 +60,6 @@ class Object_Detector():
         return image_tensor, boxes, scores, classes, num_detections
 
 
-
-
 OBJECT_STRINGS = \
 {1: {'id': 1, 'name': u'person'},
  2: {'id': 2, 'name': u'bicycle'},
