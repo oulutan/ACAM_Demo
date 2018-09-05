@@ -87,7 +87,8 @@ def test_tracking_local_video():
         print("frame_cnt: %i" %frame_cnt)
         expanded_img = np.expand_dims(test_img, axis=0)
         detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
-        Tracker.update_tracker(detection_list[0], test_img)
+        detection_info = [info[0] for info in detection_list]
+        Tracker.update_tracker(detection_info, test_img)
         out_img = visualize_results_from_tracking(test_img, Tracker.active_actors, Tracker.inactive_actors, display=False)
         writer.append_data(out_img)
         
@@ -186,5 +187,5 @@ def visualize_results_from_tracking(img_np, active_actors, inactive_actors, disp
 if __name__ == '__main__':
     # test_local_image()
     # test_local_video()
-    test_tracking_local_video
+    test_tracking_local_video()
 
