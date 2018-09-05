@@ -10,18 +10,23 @@ import object_detection.object_detector as obj
 
 def test_local_image():
 
-    obj_detection_graph = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + 'object_detection/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb'
+    main_folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) 
+    obj_detection_graph =  os.path.join(main_folder_path, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 
-    print("Loading object detection model at %s" obj_detection_graph)
+    print("Loading object detection model at %s" % obj_detection_graph)
 
     Obj_Detector = obj.Object_Detector(obj_detection_graph)
 
     test_img_path = 'chase.png'
+    print('Testing on %s' % test_img_path)
     test_img = cv2.imread(test_img_path)
-    detection_list = Obj_Detector.detect_objects_in_np(test_img)
+    expanded_img = np.expand_dims(test_img, axis=0)
+    detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
     out_img = visualize_results(test_img, detection_list, display=False)
     #import pdb;pdb.set_trace()
-    cv2.imwrite('chase_out.jpg', out_img)
+    out_img_path = 'chase_out.jpg' 
+    cv2.imwrite(out_img_path, out_img)
+    print("Output image %s written!" % out_img_path)
     
 
 
@@ -70,3 +75,8 @@ def visualize_results(img_np, detection_list, display=True):
         cv2.imshow('results', disp_img)
         cv2.waitKey(0)
     return disp_img
+
+
+if __name__ == '__main__':
+    test_local_image()
+
