@@ -1,3 +1,4 @@
 *.pyc
 object_detection/weights/tf_zoo
 object_detection/weights/batched_zoo
+action_detection/weights/
