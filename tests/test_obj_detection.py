@@ -52,6 +52,7 @@ def test_local_video():
         frame_cnt += 1
         if frame_cnt % 2 == 0:
             continue
+        print("frame_cnt: %i" %frame_cnt)
         expanded_img = np.expand_dims(test_img, axis=0)
         detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
         out_img = visualize_results(test_img, detection_list, display=False)
@@ -108,5 +109,6 @@ def visualize_results(img_np, detection_list, display=True):
 
 
 if __name__ == '__main__':
-    test_local_image()
+    #test_local_image()
+    test_local_video()
 
