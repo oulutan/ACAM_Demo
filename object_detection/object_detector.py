@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import cv2
 
 class Object_Detector():
     def __init__(self, graph_path, session=None):
@@ -59,6 +60,87 @@ class Object_Detector():
 
         return image_tensor, boxes, scores, classes, num_detections
 
+
+class Tracker():
+    def __init__(self, timesteps=32):
+        self.active_actors = []
+        self.inactive_actors = []
+        self.actor_no = 0
+
+    def update_tracker(self, detection_info, frame):
+        # filter out non-persons or less than threshold
+        score_th = 0.30
+
+        boxes, scores, classes, num_detections = detection_info
+        indices = np.logical_and(scores > score_th, classes == 1)
+        filtered_boxes, filtered_scores = boxes[indices], scores[indices]
+
+        IoU_th = 0.5 
+        matched_indices = []
+        lost_actors = []
+        for aa in range(len(self.active_actors)):
+            current_actor = self.active_actors[aa]
+            IoUs = []
+            for bb in range(filtered_boxes.shape[0]):
+                cur_box = filtered_boxes[bb]
+                IoU = IoU_box(cur_box, current_actor['all_boxes'][-1])
+                IoUs.append(IoU)
+            
+            if np.max(IoUs) > IoU_th:
+                # update current actor
+                matched_idx = np.argmax(IoUs)
+                matched_indices.append(matched_idx)
+                current_actor['all_boxes'].append(filtered_boxes[matched_idx])
+                current_actor['all_scores'].append(filtered_scores[matched_idx])
+                current_actor['length'] += 1
+            else:
+                lost_actors.append(aa)
+                self.inactive_actors.append(current_actor)
+        
+        # remove unmatched actors
+        for ii in sorted(lost_actors, reverse=True):
+            del self.active_actors[ii]
+
+        # add new detected actors
+        for bb in range(filtered_boxes.shape[0]):
+            if bb in matched_indices:
+                continue
+            
+            actor_info = {}
+            actor_info['all_boxes'] = [filtered_boxes[bb]]
+            actor_info['all_scores'] = [filtered_scores[bb]]
+            actor_info['length'] = 1
+            actor_info['actor_id'] = self.actor_no
+            self.actor_no += 1
+            self.active_actors.append(actor_info)
+
+def get_roi_with_context(box, frame, box_size):
+    top1, left1, bottom1, right1 = box
+    area = (right1 - left1) * (bottom1 - top1)
+
+
+        
+
+def IoU_box(box1, box2):
+    '''
+    returns intersection over union
+    '''
+    top1, left1, bottom1, right1 = box1
+    top2, left2, bottom2, right2 = box2
+    
+    left_int = max(left1, left2)
+    top_int = max(top1, top2)
+ 
+    right_int = min(right1, right2)
+    bottom_int = min(bottom1, bottom2)
+ 
+    areaIntersection = max(0, right_int - left_int) * max(0, bottom_int - top_int)
+ 
+    area1 = (right1 - left1) * (bottom1 - top1)
+    area2 = (right2 - left2) * (bottom2 - top2)
+     
+    IoU = areaIntersection / float(area1 + area2 - areaIntersection)
+    return IoU     
 
 OBJECT_STRINGS = \
 {1: {'id': 1, 'name': u'person'},
