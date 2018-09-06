@@ -16,6 +16,7 @@ def main():
 
     # parser.add_argument('-v', '--video_path', type=str, required=True)
     video_path = "./tests/chase1Person1View3Point0.mp4"
+    out_vid_path = 'output.mp4'
 
     main_folder = './'
     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
@@ -36,18 +37,20 @@ def main():
     act_detector.restore_model(ckpt_path)
 
     reader = imageio.get_reader(video_path, 'ffmpeg')
+    fps = reader.get_meta_data()['fps'] // 2
+    writer = imageio.get_writer(out_vid_path, fps=fps)
 
     frame_cnt = 0
-    for test_img in reader:
+    for cur_img in reader:
         frame_cnt += 1
         if frame_cnt % 2 == 0:
             continue
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
-        expanded_img = np.expand_dims(test_img, axis=0)
+        expanded_img = np.expand_dims(cur_img, axis=0)
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
         detection_info = [info[0] for info in detection_list]
-        tracker.update_tracker(detection_info, test_img)
+        tracker.update_tracker(detection_info, cur_img)
 
         # Action detection
         batch_size = len(tracker.active_actors)
@@ -62,14 +65,71 @@ def main():
         feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
         probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
 
+        # Print top_k probs
         print_top_k = 5
+        act_results = []
         for bb in range(batch_size):
             act_probs = probs[bb]
             order = np.argsort(act_probs)[::-1]
             print("Person %i" % tracker.active_actors[bb]['actor_id'])
+            cur_results = []
             for pp in range(print_top_k):
                 print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+                cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+            act_results.append(cur_results)
+        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, display=False)
+        writer.append_data(out_img)
+        
+    writer.close()
 
+
+np.random.seed(10)
+COLORS = np.random.randint(0, 255, [300, 3])
+def visualize_detection_results(img_np, active_actors, act_results, display=True):
+    score_th = 0.30
+    action_th = 0.30
+
+    # copy the original image first
+    disp_img = np.copy(img_np)
+    H, W, C = img_np.shape
+    for ii in range(len(active_actors)):
+        cur_actor = active_actors[ii]
+        cur_act_results = act_results[ii]
+        cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
+        actor_id = cur_actor['actor_id']
+        
+        if cur_score < score_th: 
+            continue
+
+        top, left, bottom, right = cur_box
+
+
+        left = int(W * left)
+        right = int(W * right)
+
+        top = int(H * top)
+        bottom = int(H * bottom)
+
+        conf = cur_score
+        #label = bbox['class_str']
+        # label = 'Class_%i' % cur_class
+        label = obj.OBJECT_STRINGS[cur_class]['name']
+        message = '%s_%i: %% %.2f' % (label, actor_id,conf)
+        action_message = ["%s:%.3f" % (actres[0][0:5], actres[1]) for actres in cur_act_results if actres[1]>action_th]
+
+        color = COLORS[actor_id]
+
+        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 2)
+
+        font_size =  max(0.5,(right - left)/50.0/float(len(message)))
+        cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
+        cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
+        cv2.putText(disp_img, action_message, (left, top-12), 0, 2, (255,0,0), 2)
+
+    if display: 
+        cv2.imshow('results', disp_img)
+        cv2.waitKey(0)
+    return disp_img
 
 if __name__ == '__main__':
     main()
