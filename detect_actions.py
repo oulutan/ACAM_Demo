@@ -115,7 +115,8 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         # label = 'Class_%i' % cur_class
         label = obj.OBJECT_STRINGS[cur_class]['name']
         message = '%s_%i: %% %.2f' % (label, actor_id,conf)
-        action_message = ["%s:%.3f" % (actres[0][0:5], actres[1]) for actres in cur_act_results if actres[1]>action_th]
+        action_message_list = ["%s:%.3f" % (actres[0][0:5], actres[1]) for actres in cur_act_results if actres[1]>action_th]
+        action_message = " ".join(action_message_list)
 
         color = COLORS[actor_id]
 
@@ -124,7 +125,7 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
         cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
-        cv2.putText(disp_img, action_message, (left, top-12), 0, 2, (255,0,0), 2)
+        cv2.putText(disp_img, action_message, (left, top+5), 0, 2, (255,0,0), 2)
 
     if display: 
         cv2.imshow('results', disp_img)
