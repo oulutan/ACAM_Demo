@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import action_detection.action_detector as act
 
 def test_on_local_segment():
-    actors = [0,1,3]
+    actors = [0,1]
     size = [400,400]
     timesteps = 32
     batch_np = np.zeros([len(actors), timesteps] + size + [3])
@@ -28,9 +28,11 @@ def test_on_local_segment():
         with open(roi_path) as fp:
             rois_np[bb] = json.load(fp)
     
-    act_detector = act.Action_Detector('i3d_tail')
+    # act_detector = act.Action_Detector('i3d_tail')
+    # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
+    act_detector = act.Action_Detector('soft_attn')
+    ckpt_name = 'model_ckpt_RGB_soft_attn-9'
     input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
-    ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     sess = act_detector.session
 
     #main_folder = sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

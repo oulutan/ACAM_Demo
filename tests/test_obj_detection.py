@@ -123,12 +123,14 @@ def test_croping_tubes_local_video():
     frame_cnt = 0
     for test_img in reader:
         frame_cnt += 1
+        if frame_cnt % 2 == 0:
+            continue
         print("frame_cnt: %i" %frame_cnt)
         expanded_img = np.expand_dims(test_img, axis=0)
         detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
         detection_info = [info[0] for info in detection_list]
         Tracker.update_tracker(detection_info, test_img)
-        if frame_cnt > 50:
+        if frame_cnt > 70:
             print("writing segments")
             for actor_no, writer in zip(actors,writers):
                 tube, roi = Tracker.crop_person_tube(actor_no)
