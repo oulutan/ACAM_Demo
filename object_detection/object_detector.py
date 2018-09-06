@@ -132,7 +132,7 @@ class Tracker():
         H,W,C = self.frame_history[-1].shape
         mid_box = recent_boxes[len(recent_boxes)//2]
         top, left, bottom, right = mid_box
-        edge = max(bottom - top, right - left)
+        edge = max(bottom - top, right - left) / 2.
 
         tube = np.zeros([self.timesteps] + list(box_size) + [3])
         for rr in range(len(recent_boxes)):
