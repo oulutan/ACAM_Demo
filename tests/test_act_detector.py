@@ -36,6 +36,9 @@ def test_on_local_segment():
     main_folder = "../"
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
 
+    init_op = tf.global_variables_initializer()
+    act_detector.session.run(init_op)
+
     act_detector.restore_model(ckpt_path)
 
 
