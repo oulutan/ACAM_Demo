@@ -37,7 +37,7 @@ class Action_Detector():
 
     def define_inference(self, input_seq, rois, roi_batch_indices):
 
-        with tf.variable_scope('ActionDetector'), self.act_graph.as_default():
+        with tf.variable_scope('ActionDetector'):
 
             end_point = 'Mixed_4f'
             box_size = [10,10]
@@ -78,11 +78,12 @@ class Action_Detector():
         return pred_probs
 
     def define_inference_with_placeholders(self):
-        input_seq = tf.placeholder(tf.float32, [None, self.timesteps]+ self.input_size + [3])
-        rois = tf.placeholder(tf.float32, [None, 4]) # top, left, bottom, right
-        roi_batch_indices = tf.placeholder(tf.int32, [None])
-        
-        pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
+        with self.act_graph.as_default():
+            input_seq = tf.placeholder(tf.float32, [None, self.timesteps]+ self.input_size + [3])
+            rois = tf.placeholder(tf.float32, [None, 4]) # top, left, bottom, right
+            roi_batch_indices = tf.placeholder(tf.int32, [None])
+            
+            pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
         return input_seq, rois, roi_batch_indices, pred_probs
         
 
