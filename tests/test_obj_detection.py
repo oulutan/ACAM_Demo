@@ -65,7 +65,7 @@ def test_tracking_local_video():
     main_folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) 
     # obj_detection_graph =  os.path.join(main_folder_path, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     obj_detection_graph =  os.path.join(main_folder_path, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    
+
     print("Loading object detection model at %s" % obj_detection_graph)
 
     Obj_Detector = obj.Object_Detector(obj_detection_graph)
@@ -115,7 +115,7 @@ def test_croping_tubes_local_video():
     # out_vid_path = "chase1Person1View3Point0_out.mp4"
     # writer = imageio.get_writer(out_vid_path, fps=fps)
     # print("Writing output video on %s" %out_vid_path)
-    actors = [0,1,3]
+    actors = [0,1,2]
     writers = []
     for ii in actors:
         writer = imageio.get_writer("person_%i.mp4" % ii, fps=fps)
@@ -241,6 +241,6 @@ def visualize_results_from_tracking(img_np, active_actors, inactive_actors, disp
 if __name__ == '__main__':
     # test_local_image()
     # test_local_video()
-    test_tracking_local_video()
-    #test_croping_tubes_local_video()
+    # test_tracking_local_video()
+    test_croping_tubes_local_video()
 
