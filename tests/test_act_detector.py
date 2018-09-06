@@ -48,9 +48,14 @@ def test_on_local_segment():
     # debug = sess.run(tf.get_collection('debug'), feed_dict=feed_dict)
     # import pdb;pdb.set_trace()
 
-    highest_conf_actions = np.argmax(probs, axis=1)
+    # highest_conf_actions = np.argsort(probs, axis=1)
+    print_top_k = 5
     for ii in range(len(actors)):
-        print("Person %i with action %s" % (actors[ii], act.ACTION_STRINGS[highest_conf_actions[ii]]))
+        act_probs = probs[ii]
+        order = np.argsort(act_probs)[::-1]
+        print("Person %i" % actors[ii])
+        for pp in range(print_top_k):
+            print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
 
 
 
