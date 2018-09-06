@@ -88,6 +88,20 @@ class Action_Detector():
         # temporal_len = roi_box_features.shape[1]
         B, temporal_len, H, W, C = roi_box_features.shape
         avg_features = tf.nn.avg_pool3d(      roi_box_features,
+                                              ksize=[1, temporal_len, 1, 1, 1],
+                                              strides=[1, temporal_len, 1, 1, 1],
+                                              padding='VALID',
+                                              name='TemporalPooling')
+        # classification
+        class_feats = tf.layers.flatten(avg_features)
+
+        return class_feats
+
+    def basic_model_pooled(self, roi_box_features):
+        # basic model, takes the input feature and averages across temporal dim
+        # temporal_len = roi_box_features.shape[1]
+        B, temporal_len, H, W, C = roi_box_features.shape
+        avg_features = tf.nn.avg_pool3d(      roi_box_features,
                                               ksize=[1, temporal_len, H, W, 1],
                                               strides=[1, temporal_len, H, W, 1],
                                               padding='VALID',
@@ -108,7 +122,7 @@ class Action_Detector():
             
             # flat_feats = self.spatio_temporal_averaging(final_i3d_feat)
             # flat_feats = tf.layers.flatten(final_i3d_feat)
-            flat_feats = self.basic_model(final_i3d_feat)
+            flat_feats = self.basic_model_pooled(final_i3d_feat)
             # import pdb;pdb.set_trace()
             pass
             
