@@ -69,6 +69,8 @@ class Action_Detector():
 
             pred_probs = tf.nn.sigmoid(logits)
 
+            tf.add_to_collection('debug', [features, box_features, class_feats, logits, pred_probs])
+
         return pred_probs
 
     def define_inference_with_placeholders(self):
