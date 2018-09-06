@@ -24,18 +24,14 @@ def main():
 
     obj_detector = obj.Object_Detector(obj_detection_graph)
     tracker = obj.Tracker()
-    sess = obj_detector.session
 
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
-    act_detector = act.Action_Detector('soft_attn', session=sess)
+    act_detector = act.Action_Detector('soft_attn')
     ckpt_name = 'model_ckpt_RGB_soft_attn-9'
     input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
+    
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
-
-    init_op = tf.global_variables_initializer()
-    sess.run(init_op)
-
     act_detector.restore_model(ckpt_path)
 
 if __name__ == '__main__':

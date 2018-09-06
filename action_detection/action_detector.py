@@ -13,15 +13,17 @@ class Action_Detector():
         self.input_size = [400,400]
         self.timesteps = 32
         self.max_rois = 1
+        self.act_graph = tf.Graph()
 
         if not session:
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
             
-            session = tf.Session(config=config)
+            session = tf.Session(graph=self.act_graph, config=config)
         self.session = session
 
     def restore_model(self, ckpt_file):
+        self.session.run(self.init_op)
         print("Loading weights from %s" % ckpt_file)
         action_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='ActionDetector')
         var_map = {}
@@ -35,7 +37,7 @@ class Action_Detector():
 
     def define_inference(self, input_seq, rois, roi_batch_indices):
 
-        with tf.variable_scope('ActionDetector'):
+        with tf.variable_scope('ActionDetector'), self.act_graph.as_default():
 
             end_point = 'Mixed_4f'
             box_size = [10,10]
@@ -68,6 +70,8 @@ class Action_Detector():
                                     kernel_initializer=tf.truncated_normal_initializer(mean=0.0,stddev=0.01))
 
             pred_probs = tf.nn.sigmoid(logits)
+
+            self.init_op = tf.global_variables_initializer()
 
             # tf.add_to_collection('debug', [features, box_features, class_feats, logits, pred_probs])
 
