@@ -94,6 +94,50 @@ def test_tracking_local_video():
         
     writer.close()
 
+def test_croping_tubes_local_video():
+    main_folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) 
+    obj_detection_graph =  os.path.join(main_folder_path, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+
+    print("Loading object detection model at %s" % obj_detection_graph)
+
+    Obj_Detector = obj.Object_Detector(obj_detection_graph)
+    Tracker = obj.Tracker()
+
+    test_vid_path = "chase1Person1View3Point0.mp4"
+    print('Testing on %s' % test_vid_path)
+
+    reader = imageio.get_reader(test_vid_path, 'ffmpeg')
+    fps = reader.get_meta_data()['fps'] // 2
+
+    # out_vid_path = "chase1Person1View3Point0_out.mp4"
+    # writer = imageio.get_writer(out_vid_path, fps=fps)
+    # print("Writing output video on %s" %out_vid_path)
+    actors = [0,1,3]
+    writers = []
+    for ii in actors:
+        writer = imageio.get_writer("person_%i.mp4" % ii, fps=fps)
+        print("Video writer set for person_%i" % ii)
+        writers.append(writer)
+
+    frame_cnt = 0
+    for test_img in reader:
+        frame_cnt += 1
+        print("frame_cnt: %i" %frame_cnt)
+        expanded_img = np.expand_dims(test_img, axis=0)
+        detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
+        detection_info = [info[0] for info in detection_list]
+        Tracker.update_tracker(detection_info, test_img)
+        if frame_cnt > 50:
+            print("writing segments")
+            for actor_no, writer in zip(actors,writers):
+                tube, roi = Tracker.crop_person_tube(actor_no)
+                for ii in range(tube.shape[0]):
+                    writer.append_data(tube[ii])
+                writer.close()
+        # out_img = visualize_results_from_tracking(test_img, Tracker.active_actors, Tracker.inactive_actors, display=False)
+        # writer.append_data(out_img)
+        
+    # writer.close()
 
 np.random.seed(10)
 COLORS = np.random.randint(0, 255, [300, 3])
@@ -187,5 +231,6 @@ def visualize_results_from_tracking(img_np, active_actors, inactive_actors, disp
 if __name__ == '__main__':
     # test_local_image()
     # test_local_video()
-    test_tracking_local_video()
+    # test_tracking_local_video()
+    test_croping_tubes_local_video()
 
