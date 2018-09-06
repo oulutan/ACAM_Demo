@@ -139,6 +139,7 @@ def test_croping_tubes_local_video():
                 with open('person_%i_roi.json' % actor_no, 'w') as fp:
                     json.dump(roi, fp)
                 print("Actor %i video and roi written" % actor_no)
+            break
         # out_img = visualize_results_from_tracking(test_img, Tracker.active_actors, Tracker.inactive_actors, display=False)
         # writer.append_data(out_img)
         
