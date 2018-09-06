@@ -45,8 +45,8 @@ def test_on_local_segment():
 
     feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
     probs = sess.run(pred_probs, feed_dict=feed_dict)
-    debug = sess.run(tf.get_collection('debug'), feed_dict=feed_dict)
-    import pdb;pdb.set_trace()
+    # debug = sess.run(tf.get_collection('debug'), feed_dict=feed_dict)
+    # import pdb;pdb.set_trace()
 
     highest_conf_actions = np.argmax(probs, axis=1)
     for ii in range(len(actors)):

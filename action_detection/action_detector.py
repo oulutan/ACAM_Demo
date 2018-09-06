@@ -23,7 +23,7 @@ class Action_Detector():
 
     def restore_model(self, ckpt_file):
         print("Loading weights from %s" % ckpt_file)
-        action_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='ActionDetector')
+        action_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='ActionDetector')
         var_map = {}
         for variable in action_vars:
             map_name = variable.name.replace(':0', '')
@@ -69,7 +69,7 @@ class Action_Detector():
 
             pred_probs = tf.nn.sigmoid(logits)
 
-            tf.add_to_collection('debug', [features, box_features, class_feats, logits, pred_probs])
+            # tf.add_to_collection('debug', [features, box_features, class_feats, logits, pred_probs])
 
         return pred_probs
 
