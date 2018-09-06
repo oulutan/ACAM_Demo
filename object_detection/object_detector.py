@@ -127,8 +127,10 @@ class Tracker():
         boxes = actor_info['all_boxes']
         if actor_info['length'] < self.timesteps:
             recent_boxes = boxes
+            index_offset = (self.timesteps - actor_info['length']) // 2 
         else:
             recent_boxes = boxes[-self.timesteps:]
+            index_offset = 0
         H,W,C = self.frame_history[-1].shape
         mid_box = recent_boxes[len(recent_boxes)//2]
         # top, left, bottom, right = mid_box
@@ -151,7 +153,7 @@ class Tracker():
             top_ind, bottom_ind = int(top * H)+padsize, int(bottom * H)+padsize
             left_ind, right_ind = int(left * W)+padsize, int(right * W)+padsize
             cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
-            tube[rr,:,:,:] = cv2.resize(cur_image_crop, box_size)
+            tube[rr+index_offset,:,:,:] = cv2.resize(cur_image_crop, box_size)
 
         return tube, norm_roi
 
