@@ -24,7 +24,12 @@ class Action_Detector():
     def restore_model(self, ckpt_file):
         print("Loading weights from %s" % ckpt_file)
         action_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='ActionDetector')
-        model_saver = tf.train.Saver(var_list=action_vars)
+        var_map = {}
+        for variable in action_vars:
+            map_name = variable.name.replace(':0', '')
+            map_name = map_name.replace('ActionDetector/', '')
+            var_map[map_name] = variable
+        model_saver = tf.train.Saver(var_list=var_map)
         model_saver.restore(self.session, ckpt_file)
         
 
