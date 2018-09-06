@@ -241,6 +241,6 @@ def visualize_results_from_tracking(img_np, active_actors, inactive_actors, disp
 if __name__ == '__main__':
     # test_local_image()
     # test_local_video()
-    # test_tracking_local_video()
-    test_croping_tubes_local_video()
+    test_tracking_local_video()
+    #test_croping_tubes_local_video()
 
