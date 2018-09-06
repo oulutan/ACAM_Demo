@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import action_detection.action_detector as act
 
 def test_on_local_segment():
-    actors = [0,1]
+    actors = [0,1,2]
     size = [400,400]
     timesteps = 32
     batch_np = np.zeros([len(actors), timesteps] + size + [3])
