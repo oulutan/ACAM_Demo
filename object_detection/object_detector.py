@@ -154,7 +154,7 @@ class Tracker():
 def generate_edge_and_normalized_roi(mid_box):
     top, left, bottom, right = mid_box
 
-    edge = max(bottom - top, right - left) / 2. # change this to change the size of the tube
+    edge = max(bottom - top, right - left) / 2. * 1.5 # change this to change the size of the tube
 
     cur_center = (top+bottom)/2., (left+right)/2.
     context_top, context_bottom = cur_center[0] - edge, cur_center[0] + edge
@@ -164,7 +164,7 @@ def generate_edge_and_normalized_roi(mid_box):
     normalized_bottom = (bottom - context_top) / (2*edge)
 
     normalized_left = (left - context_left) / (2*edge)
-    normalized_right = (right - context_right) / (2*edge)
+    normalized_right = (right - context_left) / (2*edge)
 
     norm_roi = [normalized_top, normalized_left, normalized_bottom, normalized_right]
 
