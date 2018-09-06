@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-import action_detection.i3d as i3d_model
+import action_detection.i3d as i3d
 
 class Action_Detector():
     def __init__(self, model_arc, session=None):
@@ -10,6 +10,9 @@ class Action_Detector():
 
         self.is_training = False
         self.num_classes = 60
+        self.input_size = [400,400]
+        self.timesteps = 32
+        self.max_rois = 1
 
         if not session:
             config = tf.ConfigProto()
@@ -24,12 +27,14 @@ class Action_Detector():
         model_saver.restore(self.session, ckpt_file)
         
 
-    def define_inference(self, input_seq, roi_batch_indices, rois):
+    def define_inference(self, input_seq, rois, roi_batch_indices):
 
         with tf.variable_scope('ActionDetector'):
 
             end_point = 'Mixed_4f'
             box_size = [10,10]
+
+            i3d_model = i3d.I3D_model(modality='RGB', num_classes=self.num_classes)
             features, end_points = i3d_model.inference(input_seq, self.is_training, end_point)
 
             print('Using model %s' % self.architecture_str)
@@ -59,6 +64,15 @@ class Action_Detector():
             pred_probs = tf.nn.sigmoid(logits)
 
         return pred_probs
+
+    def define_inference_with_placeholders(self):
+        input_seq = tf.placeholder(tf.float32, [None, self.timesteps]+ self.input_size + [3])
+        rois = tf.placeholder(tf.float32, [None, self.max_rois, 4]) # top, left, bottom, right
+        roi_batch_indices = tf.placeholder(tf.int32, [None, self.max_rois])
+        
+        pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
+        return input_seq, rois, roi_batch_indices, pred_probs
+        
 
     ####### MODELS #######
     def basic_model(self, roi_box_features):

@@ -131,8 +131,9 @@ class Tracker():
             recent_boxes = boxes[-self.timesteps:]
         H,W,C = self.frame_history[-1].shape
         mid_box = recent_boxes[len(recent_boxes)//2]
-        top, left, bottom, right = mid_box
-        edge = max(bottom - top, right - left) / 2.
+        # top, left, bottom, right = mid_box
+        # edge = max(bottom - top, right - left) / 2.
+        edge, norm_roi = generate_edge_and_normalized_roi(mid_box)
 
         tube = np.zeros([self.timesteps] + list(box_size) + [3])
         for rr in range(len(recent_boxes)):
@@ -148,7 +149,28 @@ class Tracker():
             cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
             tube[rr,:,:,:] = cv2.resize(cur_image_crop, box_size)
 
-        return tube, mid_box
+        return tube, norm_roi
+
+def generate_edge_and_normalized_roi(mid_box):
+    top, left, bottom, right = mid_box
+
+    edge = max(bottom - top, right - left) / 2. # change this to change the size of the tube
+
+    cur_center = (top+bottom)/2., (left+right)/2.
+    context_top, context_bottom = cur_center[0] - edge, cur_center[0] + edge
+    context_left, context_right = cur_center[1] - edge, cur_center[1] + edge
+
+    normalized_top = (top - context_top) / (2*edge)
+    normalized_bottom = (bottom - context_top) / (2*edge)
+
+    normalized_left = (left - context_left) / (2*edge)
+    normalized_right = (right - context_right) / (2*edge)
+
+    norm_roi = [normalized_top, normalized_left, normalized_bottom, normalized_right]
+
+    return edge, norm_roi
+
+
 
 
         
