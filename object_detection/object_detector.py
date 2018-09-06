@@ -140,7 +140,7 @@ class Tracker():
             cur_box = recent_boxes[rr]
             # zero pad so that we dont have to worry about edge cases
             cur_frame = self.frame_history[rr]
-            padsize = edge * max(H,W)
+            padsize = int(edge * max(H,W))
             cur_frame = np.pad(cur_frame, padsize, 'constant')
 
             top, left, bottom, right = cur_box
