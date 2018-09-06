@@ -122,7 +122,7 @@ class Tracker():
         else:
             self.frame_history.append(frame)
         
-    def crop_person_tube(self, actor_id, box_size=[400,400]):
+    def crop_person_tube(self, actor_id, box_size=(400,400)):
         actor_info = self.active_actors[actor_id]
         boxes = actor_info['all_boxes']
         if actor_info['length'] < self.timesteps:
@@ -134,7 +134,7 @@ class Tracker():
         top, left, bottom, right = mid_box
         edge = max(bottom - top, right - left)
 
-        tube = np.zeros([self.timesteps] + box_size + [3])
+        tube = np.zeros([self.timesteps] + list(box_size) + [3])
         for rr in range(len(recent_boxes)):
             cur_box = recent_boxes[rr]
             cur_frame = self.frame_history[rr]
