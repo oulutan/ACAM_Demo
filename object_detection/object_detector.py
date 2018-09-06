@@ -131,12 +131,18 @@ class Tracker():
             recent_boxes = boxes[-self.timesteps:]
         H,W,C = self.frame_history[-1].shape
         mid_box = recent_boxes[len(recent_boxes)//2]
+        top, left, bottom, right = mid_box
+        edge = max(bottom - top, right - left)
 
         tube = np.zeros([self.timesteps] + box_size + [3])
         for rr in range(len(recent_boxes)):
             cur_box = recent_boxes[rr]
             cur_frame = self.frame_history[rr]
             top, left, bottom, right = cur_box
+            cur_center = (top+bottom)/2., (left+right)/2.
+            top, bottom = cur_center[0] - edge, cur_center[0] + edge
+            left, right = cur_center[1] - edge, cur_center[1] + edge
+
             top_ind, bottom_ind = int(top * H), int(bottom * H)
             left_ind, right_ind = int(left * W), int(right * W)
             cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
