@@ -31,8 +31,8 @@ import tensorflow as tf
 ##### Wrapper Begins
 # WEIGHTS_PATH = './models/weights/'
 import os
-MAIN_FOLDER = os.environ['AVA_DIR']
-WEIGHTS_PATH = MAIN_FOLDER + '/model_training/models/weights/'
+# MAIN_FOLDER = os.environ['AVA_DIR']
+# WEIGHTS_PATH = MAIN_FOLDER + '/model_training/models/weights/'
 
 class I3D_model():
   def __init__(self, modality='RGB', num_classes=101):
@@ -48,11 +48,11 @@ class I3D_model():
     elif self.modality == 'FLOW':
       return self.flow_inference(input_image, is_training, dropout_keep, end_point)
   
-  def initialize_weights(self, sess):
-    if self.modality == 'RGB':
-      return self.rgb_initialize_weights(sess)
-    elif self.modality == 'FLOW':
-      return self.flow_initialize_weights(sess)
+  # def initialize_weights(self, sess):
+  #   if self.modality == 'RGB':
+  #     return self.rgb_initialize_weights(sess)
+  #   elif self.modality == 'FLOW':
+  #     return self.flow_initialize_weights(sess)
 
   ### RGB
   def rgb_inference(self, input_images, is_training, dropout_keep, end_point='Logits'):
@@ -65,16 +65,16 @@ class I3D_model():
 
     return rgb_logits, end_points
 
-  def rgb_initialize_weights(self, sess):
-    rgb_variable_map = {}
-    for variable in tf.global_variables():
-      if variable.name.split('/')[0] == 'RGB' and 'Logits' not in variable.name and 'Adam' not in variable.name:
-        rgb_variable_map[variable.name.replace(':0', '')] = variable
-    rgb_saver = tf.train.Saver(var_list=rgb_variable_map, reshape=True)
+  # def rgb_initialize_weights(self, sess):
+  #   rgb_variable_map = {}
+  #   for variable in tf.global_variables():
+  #     if variable.name.split('/')[0] == 'RGB' and 'Logits' not in variable.name and 'Adam' not in variable.name:
+  #       rgb_variable_map[variable.name.replace(':0', '')] = variable
+  #   rgb_saver = tf.train.Saver(var_list=rgb_variable_map, reshape=True)
   
-    path_to_weights = WEIGHTS_PATH + 'i3d_rgb_imagenet/model.ckpt'
-    rgb_saver.restore(sess, path_to_weights)
-    print('loaded i3d weights %s' % path_to_weights)
+  #   path_to_weights = WEIGHTS_PATH + 'i3d_rgb_imagenet/model.ckpt'
+  #   rgb_saver.restore(sess, path_to_weights)
+  #   print('loaded i3d weights %s' % path_to_weights)
 
   def flow_inference(self, input_images, is_training, dropout_keep, end_point='Logits'):
     flow_input = self.preprocess(input_images)
@@ -86,16 +86,16 @@ class I3D_model():
 
     return flow_logits, end_points
 
-  def flow_initialize_weights(self, sess):
-    flow_variable_map = {}
-    for variable in tf.global_variables():
-      if variable.name.split('/')[0] == 'Flow' and 'Logits' not in variable.name:
-        flow_variable_map[variable.name.replace(':0', '')] = variable
-    flow_saver = tf.train.Saver(var_list=flow_variable_map, reshape=True)
+  # def flow_initialize_weights(self, sess):
+  #   flow_variable_map = {}
+  #   for variable in tf.global_variables():
+  #     if variable.name.split('/')[0] == 'Flow' and 'Logits' not in variable.name:
+  #       flow_variable_map[variable.name.replace(':0', '')] = variable
+  #   flow_saver = tf.train.Saver(var_list=flow_variable_map, reshape=True)
 
-    path_to_weights = WEIGHTS_PATH + 'i3d_flow_imagenet/model.ckpt'
-    flow_saver.restore(sess, path_to_weights)
-    print('loaded i3d weights %s' % path_to_weights)
+  #   path_to_weights = WEIGHTS_PATH + 'i3d_flow_imagenet/model.ckpt'
+  #   flow_saver.restore(sess, path_to_weights)
+  #   print('loaded i3d weights %s' % path_to_weights)
 
   def preprocess(self, input_seq):
     # crop_mean = np.load(WEIGHTS_PATH + 'c3d_crop_mean.npy')
