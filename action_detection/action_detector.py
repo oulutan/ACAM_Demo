@@ -8,7 +8,7 @@ class Action_Detector():
         self.architecture_str = model_arc
         
 
-        self.is_training = False
+        self.is_training = tf.constant(False)
         self.num_classes = 60
         self.input_size = [400,400]
         self.timesteps = 32
@@ -68,8 +68,8 @@ class Action_Detector():
 
     def define_inference_with_placeholders(self):
         input_seq = tf.placeholder(tf.float32, [None, self.timesteps]+ self.input_size + [3])
-        rois = tf.placeholder(tf.float32, [None, self.max_rois, 4]) # top, left, bottom, right
-        roi_batch_indices = tf.placeholder(tf.int32, [None, self.max_rois])
+        rois = tf.placeholder(tf.float32, [None, 4]) # top, left, bottom, right
+        roi_batch_indices = tf.placeholder(tf.int32, [None])
         
         pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
         return input_seq, rois, roi_batch_indices, pred_probs
