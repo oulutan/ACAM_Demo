@@ -138,14 +138,18 @@ class Tracker():
         tube = np.zeros([self.timesteps] + list(box_size) + [3])
         for rr in range(len(recent_boxes)):
             cur_box = recent_boxes[rr]
+            # zero pad so that we dont have to worry about edge cases
             cur_frame = self.frame_history[rr]
+            padsize = edge * max(H,W)
+            cur_frame = np.pad(cur_frame, padsize, 'constant')
+
             top, left, bottom, right = cur_box
             cur_center = (top+bottom)/2., (left+right)/2.
             top, bottom = cur_center[0] - edge, cur_center[0] + edge
             left, right = cur_center[1] - edge, cur_center[1] + edge
 
-            top_ind, bottom_ind = int(top * H), int(bottom * H)
-            left_ind, right_ind = int(left * W), int(right * W)
+            top_ind, bottom_ind = int(top * H)+padsize, int(bottom * H)+padsize
+            left_ind, right_ind = int(left * W)+padsize, int(right * W)+padsize
             cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
             tube[rr,:,:,:] = cv2.resize(cur_image_crop, box_size)
 
