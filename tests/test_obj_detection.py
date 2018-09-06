@@ -133,10 +133,10 @@ def test_croping_tubes_local_video():
             for actor_no, writer in zip(actors,writers):
                 tube, roi = Tracker.crop_person_tube(actor_no)
                 for ii in range(tube.shape[0]):
-                    writer.append_data(tube[ii])
+                    writer.append_data(np.uint8(tube[ii]))
                 writer.close()
                 roi = [float("%.4f" % coord) for coord in roi]
-                with open('person_%i_roi.json', 'w') as fp:
+                with open('person_%i_roi.json' % actor_no, 'w') as fp:
                     json.dump(roi, fp)
                 print("Actor %i video and roi written" % actor_no)
         # out_img = visualize_results_from_tracking(test_img, Tracker.active_actors, Tracker.inactive_actors, display=False)
