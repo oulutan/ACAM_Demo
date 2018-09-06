@@ -29,14 +29,15 @@ def test_on_local_segment():
             rois_np[bb] = json.load(fp)
     
     act_detector = act.Action_Detector('i3d_tail')
+    input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
     ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
 
-    main_folder = sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    #main_folder = sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    main_folder = "../"
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
 
     act_detector.restore_model(ckpt_path)
 
-    input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
 
     feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
     probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
