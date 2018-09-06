@@ -94,7 +94,7 @@ class Action_Detector():
         with tf.variable_scope('Tail_I3D'):
             tail_end_point = 'Mixed_5c'
             # tail_end_point = 'Mixed_4f'
-            final_i3d_feat, end_points = i3d_model.i3d_tail(roi_box_features, self.is_training, tail_end_point)
+            final_i3d_feat, end_points = i3d.i3d_tail(roi_box_features, self.is_training, tail_end_point)
             # final_i3d_feat = end_points[tail_end_point]
             
             
@@ -270,7 +270,7 @@ class Action_Detector():
         with tf.variable_scope('Tail_I3D'):
             tail_end_point = 'Mixed_5c'
             # tail_end_point = 'Mixed_4f'
-            final_i3d_feat, end_points = i3d_model.i3d_tail(soft_attention_feats, self.is_training, tail_end_point)
+            final_i3d_feat, end_points = i3d.i3d_tail(soft_attention_feats, self.is_training, tail_end_point)
         
         temporal_len = final_i3d_feat.shape[1]
         avg_features = tf.nn.avg_pool3d(      final_i3d_feat,
@@ -424,3 +424,65 @@ def temporal_roi_cropping(features, rois, batch_indices, crop_size):
     boxes = unrolled_boxes
  
     return boxes #, stacked_features
+
+ACTION_STRINGS = { \
+0: "bend/bow (at the waist)",
+1: "crouch/kneel",
+2: "dance",
+3: "fall down",
+4: "get up",
+5: "jump/leap",
+6: "lie/sleep",
+7: "martial art",
+8: "run/jog",
+9: "sit",
+10: "stand",
+11: "swim",
+12: "walk",
+13: "answer phone",
+14: "carry/hold (an object)",
+15: "climb (e.g., a mountain)",
+16: "close (e.g., a door, a box)",
+17: "cut",
+18: "dress/put on clothing",
+19: "drink",
+20: "drive (e.g., a car, a truck)",
+21: "eat",
+22: "enter",
+23: "hit (an object)",
+24: "lift/pick up",
+25: "listen (e.g., to music)",
+26: "open (e.g., a window, a car door)",
+27: "play musical instrument",
+28: "point to (an object)",
+29: "pull (an object)",
+30: "push (an object)",
+31: "put down",
+32: "read",
+33: "ride (e.g., a bike, a car, a horse)",
+34: "sail boat",
+35: "shoot",
+36: "smoke",
+37: "take a photo",
+38: "text on/look at a cellphone",
+39: "throw",
+40: "touch (an object)",
+41: "turn (e.g., a screwdriver)",
+42: "watch (e.g., TV)",
+43: "work on a computer",
+44: "write",
+45: "fight/hit (a person)",
+46: "give/serve (an object) to (a person)",
+47: "grab (a person)",
+48: "hand clap",
+49: "hand shake",
+50: "hand wave",
+51: "hug (a person)",
+52: "kiss (a person)",
+53: "lift (a person)",
+54: "listen to (a person)",
+55: "push (another person)",
+56: "sing to (e.g., self, a person, a group)",
+57: "take (an object) from (a person)",
+58: "talk to (e.g., self, a person, a group)",
+59: "watch (a person)" }
