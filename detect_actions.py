@@ -12,17 +12,26 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 def main():
-    # parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    # parser.add_argument('-v', '--video_path', type=str, required=True)
-    video_path = "./tests/chase1Person1View3Point0.mp4"
-    #video_path = "./videos/VID_20180906_163727_2.mp4"
-    #video_path = "./videos/VIRAT_S_000102.mp4"
-    out_vid_path = 'output.mp4'
+    parser.add_argument('-v', '--video_path', type=str, required=True)
+
+    args = parser.parse_args()
+
+    video_path = args.video_path
+    basename = os.path.basename(video_path).split('.')[0]
+    out_vid_path = "./output_videos/%s_output.mp4" % basename
+
+    # video_path = "./tests/chase1Person1View3Point0.mp4"
+    # out_vid_path = 'output.mp4'
 
     main_folder = './'
+    ## Best
     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Good and Faster
     obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Fastest
+
 
     print("Loading object detection model at %s" % obj_detection_graph)
 
