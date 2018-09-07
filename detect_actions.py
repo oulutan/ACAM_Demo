@@ -82,7 +82,7 @@ def main():
             cur_index = 0
             while cur_index < no_actors:
                 cur_batch = batch_np[cur_index:cur_index+max_batch_size]
-                cur_roi = rois_np[cur_index:cur_index+max_batch_size]
+                cur_roi = rois_np[cur_index:cur_index+max_batch_size] - cur_index
                 cur_indices = batch_indices_np[cur_index:cur_index+max_batch_size]
                 feed_dict = {input_seq:cur_batch, rois:cur_roi, roi_batch_indices:cur_indices}
                 cur_probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
