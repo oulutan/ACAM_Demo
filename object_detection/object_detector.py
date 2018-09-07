@@ -86,6 +86,8 @@ class Tracker():
             for bb in range(filtered_boxes.shape[0]):
                 cur_box = filtered_boxes[bb]
                 IoU = IoU_box(cur_box, current_actor['all_boxes'][-1])
+                if bb in matched_indices: # if it is already matched ignore
+                    IoU = 0.0
                 IoUs.append(IoU)
             
             if IoUs and np.max(IoUs) > IoU_th:
