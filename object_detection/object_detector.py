@@ -88,7 +88,7 @@ class Tracker():
                 IoU = IoU_box(cur_box, current_actor['all_boxes'][-1])
                 IoUs.append(IoU)
             
-            if np.max(IoUs) > IoU_th:
+            if IoUs and np.max(IoUs) > IoU_th:
                 # update current actor
                 matched_idx = np.argmax(IoUs)
                 matched_indices.append(matched_idx)
