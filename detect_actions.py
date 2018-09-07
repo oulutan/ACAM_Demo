@@ -15,9 +15,9 @@ def main():
     # parser = argparse.ArgumentParser()
 
     # parser.add_argument('-v', '--video_path', type=str, required=True)
-    #video_path = "./tests/chase1Person1View3Point0.mp4"
+    video_path = "./tests/chase1Person1View3Point0.mp4"
     #video_path = "./videos/VID_20180906_163727_2.mp4"
-    video_path = "./videos/VIRAT_S_000102.mp4"
+    #video_path = "./videos/VIRAT_S_000102.mp4"
     out_vid_path = 'output.mp4'
 
     main_folder = './'
@@ -100,7 +100,7 @@ np.random.seed(10)
 COLORS = np.random.randint(0, 255, [300, 3])
 def visualize_detection_results(img_np, active_actors, act_results, display=True):
     score_th = 0.30
-    action_th = 0.30
+    action_th = 0.10
 
     # copy the original image first
     disp_img = np.copy(img_np)
@@ -129,7 +129,7 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         label = obj.OBJECT_STRINGS[cur_class]['name']
         message = '%s_%i: %% %.2f' % (label, actor_id,conf)
         action_message_list = ["%s:%.3f" % (actres[0][0:5], actres[1]) for actres in cur_act_results if actres[1]>action_th]
-        action_message = " ".join(action_message_list)
+        # action_message = " ".join(action_message_list)
 
         color = COLORS[actor_id]
 
@@ -138,7 +138,9 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
         cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
-        cv2.putText(disp_img, action_message, (left, top+5), 0, 0.5, (255,0,0), 2)
+        for aa, action_message in enumerate(action_message_list):
+            offset = aa*10
+            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,0,0), 1)
 
     if display: 
         cv2.imshow('results', disp_img)
