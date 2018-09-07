@@ -55,23 +55,33 @@ def main():
         tracker.update_tracker(detection_info, cur_img)
 
         # Action detection
-        batch_size = len(tracker.active_actors)
-        batch_np = np.zeros([batch_size, act_detector.timesteps] + act_detector.input_size + [3])
-        rois_np = np.zeros([batch_size, 4])
-        batch_indices_np = np.array(range(batch_size))
+        no_actors = len(tracker.active_actors)
+        batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3])
+        rois_np = np.zeros([no_actors, 4])
+        batch_indices_np = np.array(range(no_actors))
         for bb, actor_info in enumerate(tracker.active_actors):
             actor_no = actor_info['actor_id']
             tube, roi = tracker.crop_person_tube(actor_no)
             batch_np[bb, :] = tube
             rois_np[bb]= roi
         if tracker.active_actors:
-            feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
-            probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+            max_batch_size = 10
+            prob_list = []
+            cur_index = 0
+            while cur_index < no_actors:
+                cur_batch = batch_np[cur_index:cur_index+max_batch_size]
+                cur_roi = rois_np[cur_index:cur_index+max_batch_size]
+                cur_indices = batch_indices_np[cur_index:cur_index+max_batch_size]
+                feed_dict = {input_seq:cur_batch, rois:cur_roi, roi_batch_indices:cur_indices}
+                cur_probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+                prob_list.append(cur_probs)
+                cur_index += max_batch_size
+            probs = np.concatenate(prob_list, axis=0)
 
         # Print top_k probs
         print_top_k = 5
         act_results = []
-        for bb in range(batch_size):
+        for bb in range(no_actors):
             act_probs = probs[bb]
             order = np.argsort(act_probs)[::-1]
             print("Person %i" % tracker.active_actors[bb]['actor_id'])
