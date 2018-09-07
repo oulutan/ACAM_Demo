@@ -39,14 +39,14 @@ def main():
     act_detector.restore_model(ckpt_path)
 
     reader = imageio.get_reader(video_path, 'ffmpeg')
-    fps_divider = 1
+    fps_divider = 2
     fps = reader.get_meta_data()['fps'] // fps_divider
     writer = imageio.get_writer(out_vid_path, fps=fps)
 
     frame_cnt = 0
     for cur_img in reader:
         frame_cnt += 1
-        if frame_cnt % fps_divider == 0:
+        if frame_cnt % fps_divider != 0:
             continue
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
