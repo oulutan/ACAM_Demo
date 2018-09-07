@@ -47,10 +47,12 @@ def main():
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
     act_detector.restore_model(ckpt_path)
 
+    print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
     fps_divider = 2
     fps = reader.get_meta_data()['fps'] // fps_divider
     writer = imageio.get_writer(out_vid_path, fps=fps)
+    print("Writing output to %s" % out_vid_path)
 
     frame_cnt = 0
     for cur_img in reader:
