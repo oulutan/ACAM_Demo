@@ -15,7 +15,9 @@ def main():
     # parser = argparse.ArgumentParser()
 
     # parser.add_argument('-v', '--video_path', type=str, required=True)
-    video_path = "./tests/chase1Person1View3Point0.mp4"
+    #video_path = "./tests/chase1Person1View3Point0.mp4"
+    #video_path = "./videos/VID_20180906_163727_2.mp4"
+    video_path = "./videos/VIRAT_S_000102.mp4"
     out_vid_path = 'output.mp4'
 
     main_folder = './'
@@ -62,8 +64,9 @@ def main():
             tube, roi = tracker.crop_person_tube(actor_no)
             batch_np[bb, :] = tube
             rois_np[bb]= roi
-        feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
-        probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+        if tracker.active_actors:
+            feed_dict = {input_seq:batch_np, rois:rois_np, roi_batch_indices:batch_indices_np}
+            probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
 
         # Print top_k probs
         print_top_k = 5
@@ -125,7 +128,7 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
         cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
-        cv2.putText(disp_img, action_message, (left, top+5), 0, 2, (255,0,0), 2)
+        cv2.putText(disp_img, action_message, (left, top+5), 0, 0.5, (255,0,0), 2)
 
     if display: 
         cv2.imshow('results', disp_img)
