@@ -100,7 +100,7 @@ np.random.seed(10)
 COLORS = np.random.randint(0, 255, [300, 3])
 def visualize_detection_results(img_np, active_actors, act_results, display=True):
     score_th = 0.30
-    action_th = 0.10
+    action_th = 0.20
 
     # copy the original image first
     disp_img = np.copy(img_np)
@@ -138,6 +138,9 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
         cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
+
+        #action message writing
+        cv2.rectangle(disp_img, (left, top+5), (right,top+10*len(action_message_list)), color, -1)
         for aa, action_message in enumerate(action_message_list):
             offset = aa*10
             cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,0,0), 1)
