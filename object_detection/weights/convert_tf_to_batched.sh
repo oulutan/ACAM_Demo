@@ -2,7 +2,8 @@
 # .config files are located in models/object_detection/samples/configs/
 #MODEL_NAME=faster_rcnn_nas_lowproposals_coco_2018_01_28
 #MODEL_NAME=faster_rcnn_resnet101_ava_v2.1_2018_04_30
-MODEL_NAME=faster_rcnn_nas_coco_2018_01_28
+#MODEL_NAME=faster_rcnn_nas_coco_2018_01_28
+MODEL_NAME=faster_rcnn_resnet50_coco_2018_01_28
 MODEL_PATH=$PWD/tf_zoo/$MODEL_NAME
 OUT_PATH=$PWD/batched_zoo/$MODEL_NAME
 python ../models/research/object_detection/export_inference_graph.py --input_type image_tensor \
