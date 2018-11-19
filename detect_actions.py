@@ -22,8 +22,8 @@ def main():
 
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
-    #out_vid_path = "./output_videos/%s_output.mp4" % basename
-    out_vid_path = './output_videos/testing.mp4'
+    out_vid_path = "./output_videos/%s_output.mp4" % basename
+    # out_vid_path = './output_videos/testing.mp4'
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
     # out_vid_path = 'output.mp4'
