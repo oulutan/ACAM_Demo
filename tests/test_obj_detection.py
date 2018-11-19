@@ -71,13 +71,17 @@ def test_tracking_local_video():
     Obj_Detector = obj.Object_Detector(obj_detection_graph)
     Tracker = obj.Tracker()
 
-    test_vid_path = "chase1Person1View3Point0.mp4"
+    #test_vid_path = "chase1Person1View3Point0.mp4"
+    #test_vid_path = "VIRAT_S_000003_9_00.mp4"
+    test_vid_path = "VIRAT_S_000101_1_00.mp4"
     print('Testing on %s' % test_vid_path)
 
     reader = imageio.get_reader(test_vid_path, 'ffmpeg')
     fps = reader.get_meta_data()['fps'] // 2
 
-    out_vid_path = "chase1Person1View3Point0_out.mp4"
+    #out_vid_path = "chase1Person1View3Point0_out.mp4"
+    #out_vid_path = "VIRAT_S_000003_9_00_out.mp4"
+    out_vid_path = "VIRAT_S_000101_1_00_out.mp4"
     writer = imageio.get_writer(out_vid_path, fps=fps)
     print("Writing output video on %s" %out_vid_path)
 
@@ -91,6 +95,7 @@ def test_tracking_local_video():
         detection_list = Obj_Detector.detect_objects_in_np(expanded_img)
         detection_info = [info[0] for info in detection_list]
         Tracker.update_tracker(detection_info, test_img)
+        #print(Tracker.active_actors)
         out_img = visualize_results_from_tracking(test_img, Tracker.active_actors, Tracker.inactive_actors, display=False)
         writer.append_data(out_img)
         
@@ -227,7 +232,7 @@ def visualize_results_from_tracking(img_np, active_actors, inactive_actors, disp
         color = COLORS[actor_id]
 
 
-        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 2)
+        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 3)
 
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
