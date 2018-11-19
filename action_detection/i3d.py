@@ -57,7 +57,8 @@ class I3D_model():
   ### RGB
   def rgb_inference(self, input_images, is_training, dropout_keep, end_point='Logits'):
     rgb_input = self.preprocess(input_images)
-    with tf.variable_scope('RGB'):
+    #with tf.variable_scope('RGB'):
+    with tf.variable_scope('I3D_Model'):
       rgb_model = InceptionI3d(
           self.num_classes, spatial_squeeze=True, final_endpoint=end_point)
       rgb_logits, end_points = rgb_model(

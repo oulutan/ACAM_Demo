@@ -61,68 +61,148 @@ class Object_Detector():
         return image_tensor, boxes, scores, classes, num_detections
 
 
+from tools.generate_detections import create_box_encoder
+from deep_sort import nn_matching
+from deep_sort.detection import Detection
+from deep_sort.tracker import Tracker as ds_Tracker
+MODEL_CKPT = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/deep_sort/weights/mars-small128.pb"
 class Tracker():
     def __init__(self):
         self.active_actors = []
         self.inactive_actors = []
         self.actor_no = 0
         self.frame_history = []
+        self.frame_no = 0
         self.timesteps = 32
+        self.actor_infos = {}
+        # deep sort
+        self.encoder = create_box_encoder(MODEL_CKPT, batch_size=16)
+        metric = nn_matching.NearestNeighborDistanceMetric(
+                "cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
+        self.tracker = ds_Tracker(metric)
+        #self.results = []
 
     def update_tracker(self, detection_info, frame):
-        # filter out non-persons or less than threshold
         score_th = 0.30
 
         boxes, scores, classes, num_detections = detection_info
-        indices = np.logical_and(scores > score_th, classes == 1)
+        indices = np.logical_and(scores > score_th, classes == 1)# filter score threshold and non-person detections
         filtered_boxes, filtered_scores = boxes[indices], scores[indices]
 
-        IoU_th = 0.4
-        matched_indices = []
-        lost_actors = []
-        for aa in range(len(self.active_actors)):
-            current_actor = self.active_actors[aa]
-            IoUs = []
-            for bb in range(filtered_boxes.shape[0]):
-                cur_box = filtered_boxes[bb]
-                IoU = IoU_box(cur_box, current_actor['all_boxes'][-1])
-                if bb in matched_indices: # if it is already matched ignore
-                    IoU = 0.0
-                IoUs.append(IoU)
-            
-            if IoUs and np.max(IoUs) > IoU_th:
-                # update current actor
-                matched_idx = np.argmax(IoUs)
-                matched_indices.append(matched_idx)
-                current_actor['all_boxes'].append(filtered_boxes[matched_idx])
-                current_actor['all_scores'].append(filtered_scores[matched_idx])
-                current_actor['length'] += 1
-            else:
-                lost_actors.append(aa)
-                self.inactive_actors.append(current_actor)
-        
-        # remove unmatched actors
-        for ii in sorted(lost_actors, reverse=True):
-            del self.active_actors[ii]
-
-        # add new detected actors
+        H,W,C = frame.shape
+        # deep sort format boxes (x, y, W, H)
+        ds_boxes = []
         for bb in range(filtered_boxes.shape[0]):
-            if bb in matched_indices:
+            cur_box = filtered_boxes[bb]
+            cur_score = filtered_scores[bb]
+            top, left, bottom, right = cur_box
+            ds_box = [int(left*W), int(top*H), int((right-left)*W), int((bottom-top)*H)]
+            ds_boxes.append(ds_box)
+        features = self.encoder(frame, ds_boxes)
+
+        detection_list = []
+        for bb in range(filtered_boxes.shape[0]):
+            cur_box = filtered_boxes[bb]
+            cur_score = filtered_scores[bb]
+            feature = features[bb]
+            top, left, bottom, right = cur_box
+            ds_box = [int(left*W), int(top*H), int((right-left)*W), int((bottom-top)*H)]
+            detection_list.append(Detection(ds_box, cur_score, feature))
+
+        # update tracker
+        self.tracker.predict()
+        self.tracker.update(detection_list)
+        
+        # Store results.
+        #results = []
+        actives = []
+        for track in self.tracker.tracks:
+            if not track.is_confirmed() or track.time_since_update > 1:
                 continue
-            
-            actor_info = {}
-            actor_info['all_boxes'] = [filtered_boxes[bb]]
-            actor_info['all_scores'] = [filtered_scores[bb]]
-            actor_info['length'] = 1
-            actor_info['actor_id'] = self.actor_no
-            self.actor_no += 1
-            self.active_actors.append(actor_info)
+            bbox = track.to_tlwh()
+            left, top, width, height = bbox
+            tr_box = [top / float(H), left / float(W), (top+height)/float(H), (left+width)/float(W)]
+            actor_id = track.track_id
+            #results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
+            #results.append({'all_boxes': [tr_box], 'all_scores': [1.00], 'actor_id': track.track_id})
+            if actor_id in self.actor_infos: # update with the new bbox info
+                cur_actor = self.actor_infos[actor_id]
+                no_interpolate_frames = self.frame_no - cur_actor['last_updated_frame_no']
+                interpolated_box_list = bbox_interpolate(cur_actor['all_boxes'][-1], tr_box, no_interpolate_frames)
+                cur_actor['all_boxes'].extend(interpolated_box_list[1:])
+                cur_actor['last_updated_frame_no'] = self.frame_no
+                cur_actor['length'] = len(cur_actor['all_boxes'])
+                actives.append(cur_actor)
+            else:
+                new_actor = {'all_boxes': [tr_box], 'length':1, 'last_updated_frame_no': self.frame_no, 'all_scores':[1.0], 'actor_id':actor_id}
+                self.actor_infos[actor_id] = new_actor
+
+        self.active_actors = actives
+        
+
 
         if len(self.frame_history) == 32:
             del self.frame_history[0]
             self.frame_history.append(frame)
         else:
             self.frame_history.append(frame)
+
+        self.frame_no += 1
+
+    # def update_tracker(self, detection_info, frame):
+    #     # filter out non-persons or less than threshold
+    #     score_th = 0.30
+
+    #     boxes, scores, classes, num_detections = detection_info
+    #     indices = np.logical_and(scores > score_th, classes == 1)
+    #     filtered_boxes, filtered_scores = boxes[indices], scores[indices]
+
+    #     IoU_th = 0.4
+    #     matched_indices = []
+    #     lost_actors = []
+    #     for aa in range(len(self.active_actors)):
+    #         current_actor = self.active_actors[aa]
+    #         IoUs = []
+    #         for bb in range(filtered_boxes.shape[0]):
+    #             cur_box = filtered_boxes[bb]
+    #             IoU = IoU_box(cur_box, current_actor['all_boxes'][-1])
+    #             if bb in matched_indices: # if it is already matched ignore
+    #                 IoU = 0.0
+    #             IoUs.append(IoU)
+    #         
+    #         if IoUs and np.max(IoUs) > IoU_th:
+    #             # update current actor
+    #             matched_idx = np.argmax(IoUs)
+    #             matched_indices.append(matched_idx)
+    #             current_actor['all_boxes'].append(filtered_boxes[matched_idx])
+    #             current_actor['all_scores'].append(filtered_scores[matched_idx])
+    #             current_actor['length'] += 1
+    #         else:
+    #             lost_actors.append(aa)
+    #             self.inactive_actors.append(current_actor)
+    #     
+    #     # remove unmatched actors
+    #     for ii in sorted(lost_actors, reverse=True):
+    #         del self.active_actors[ii]
+
+    #     # add new detected actors
+    #     for bb in range(filtered_boxes.shape[0]):
+    #         if bb in matched_indices:
+    #             continue
+    #         
+    #         actor_info = {}
+    #         actor_info['all_boxes'] = [filtered_boxes[bb]]
+    #         actor_info['all_scores'] = [filtered_scores[bb]]
+    #         actor_info['length'] = 1
+    #         actor_info['actor_id'] = self.actor_no
+    #         self.actor_no += 1
+    #         self.active_actors.append(actor_info)
+
+    #     if len(self.frame_history) == 32:
+    #         del self.frame_history[0]
+    #         self.frame_history.append(frame)
+    #     else:
+    #         self.frame_history.append(frame)
         
     def crop_person_tube(self, actor_id, box_size=(400,400)):
         actor_info = [act for act in self.active_actors if act['actor_id'] == actor_id][0]
@@ -139,7 +219,7 @@ class Tracker():
         # edge = max(bottom - top, right - left) / 2.
         edge, norm_roi = generate_edge_and_normalized_roi(mid_box)
 
-        tube = np.zeros([self.timesteps] + list(box_size) + [3])
+        tube = np.zeros([self.timesteps] + list(box_size) + [3], np.uint8)
         for rr in range(len(recent_boxes)):
             cur_box = recent_boxes[rr]
             # zero pad so that we dont have to worry about edge cases
@@ -158,6 +238,18 @@ class Tracker():
             tube[rr+index_offset,:,:,:] = cv2.resize(cur_image_crop, box_size)
 
         return tube, norm_roi
+
+def bbox_interpolate(start_box, end_box, no_interpolate_frames):
+    delta = (np.array(end_box) - np.array(start_box)) / float(no_interpolate_frames)
+    interpolated_boxes = []
+    for ii in range(0, no_interpolate_frames+1):
+        cur_box = np.array(start_box) + delta * ii
+        interpolated_boxes.append(cur_box.tolist())
+    return interpolated_boxes
+        
+
+
+    
 
 def generate_edge_and_normalized_roi(mid_box):
     top, left, bottom, right = mid_box

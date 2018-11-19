@@ -11,6 +11,8 @@ import argparse
 import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
+import time
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -21,6 +23,7 @@ def main():
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
     out_vid_path = "./output_videos/%s_output.mp4" % basename
+    #out_vid_path = './output_videos/testing.mp4'
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
     # out_vid_path = 'output.mp4'
@@ -29,12 +32,16 @@ def main():
     ## Best
     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Good and Faster
-    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Fastest
-    obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+
+    # NAS
+    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
+
 
     obj_detector = obj.Object_Detector(obj_detection_graph)
     tracker = obj.Tracker()
@@ -42,7 +49,8 @@ def main():
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn')
-    ckpt_name = 'model_ckpt_RGB_soft_attn-9'
+    #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
+    ckpt_name = 'model_ckpt_soft_attn_ava-23'
     input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
     
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
@@ -50,7 +58,9 @@ def main():
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
+    #fps_divider = 2
     fps_divider = 2
+    print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
     writer = imageio.get_writer(out_vid_path, fps=fps)
     print("Writing output to %s" % out_vid_path)
@@ -58,26 +68,34 @@ def main():
     frame_cnt = 0
     for cur_img in reader:
         frame_cnt += 1
-        if frame_cnt % fps_divider != 0:
+        if frame_cnt % fps_divider != 0: # or frame_cnt < 60:
             continue
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
         expanded_img = np.expand_dims(cur_img, axis=0)
+        #t1 = time.time()
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
         detection_info = [info[0] for info in detection_list]
+        #t2 = time.time(); print('obj det %.2f seconds' % (t2-t1))
         tracker.update_tracker(detection_info, cur_img)
+        #t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
 
         # Action detection
         no_actors = len(tracker.active_actors)
-        batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3])
+        #batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3], np.uint8)
+        batch_list = []
         rois_np = np.zeros([no_actors, 4])
         batch_indices_np = np.array(range(no_actors))
         for bb, actor_info in enumerate(tracker.active_actors):
             actor_no = actor_info['actor_id']
             tube, roi = tracker.crop_person_tube(actor_no)
-            batch_np[bb, :] = tube
+            #batch_np[bb, :] = tube
+            batch_list.append(tube)
             rois_np[bb]= roi
+        #t4 = time.time(); print('cropping %.2f seconds' % (t4-t3))
+
         if tracker.active_actors:
+            batch_np = np.stack(batch_list, axis=0)
             max_batch_size = 10
             prob_list = []
             cur_index = 0
@@ -86,11 +104,14 @@ def main():
                 cur_roi = rois_np[cur_index:cur_index+max_batch_size]
                 cur_indices = batch_indices_np[cur_index:cur_index+max_batch_size] - cur_index
                 feed_dict = {input_seq:cur_batch, rois:cur_roi, roi_batch_indices:cur_indices}
+                #t51 = time.time(); print('action before run %.2f seconds' % (t51-t4))
                 cur_probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+                #t52 = time.time(); print('action after run %.2f seconds' % (t52-t51))
                 prob_list.append(cur_probs)
                 cur_index += max_batch_size
             probs = np.concatenate(prob_list, axis=0)
 
+        #t5 = time.time(); print('action %.2f seconds' % (t5-t4))
         # Print top_k probs
         print_top_k = 5
         act_results = []
@@ -110,7 +131,7 @@ def main():
 
 
 np.random.seed(10)
-COLORS = np.random.randint(0, 255, [300, 3])
+COLORS = np.random.randint(0, 255, [1000, 3])
 def visualize_detection_results(img_np, active_actors, act_results, display=True):
     score_th = 0.30
     action_th = 0.20
@@ -141,12 +162,12 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         # label = 'Class_%i' % cur_class
         label = obj.OBJECT_STRINGS[cur_class]['name']
         message = '%s_%i: %% %.2f' % (label, actor_id,conf)
-        action_message_list = ["%s:%.3f" % (actres[0][0:5], actres[1]) for actres in cur_act_results if actres[1]>action_th]
+        action_message_list = ["%s:%.3f" % (actres[0][0:7], actres[1]) for actres in cur_act_results if actres[1]>action_th]
         # action_message = " ".join(action_message_list)
 
         color = COLORS[actor_id]
 
-        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 2)
+        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 3)
 
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
@@ -156,7 +177,7 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
         cv2.rectangle(disp_img, (left, top), (right,top+10*len(action_message_list)), color, -1)
         for aa, action_message in enumerate(action_message_list):
             offset = aa*10
-            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,0,0), 1)
+            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
 
     if display: 
         cv2.imshow('results', disp_img)
