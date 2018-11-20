@@ -12,7 +12,7 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 import time
-
+DISPLAY = False
 def main():
     parser = argparse.ArgumentParser()
 
@@ -23,7 +23,7 @@ def main():
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
     out_vid_path = "./output_videos/%s_output.mp4" % basename
-    # out_vid_path = './output_videos/testing.mp4'
+    #out_vid_path = './output_videos/testing.mp4'
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
     # out_vid_path = 'output.mp4'
@@ -55,7 +55,7 @@ def main():
     fps_divider = 2
     print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
-    H, W = reader.get_meta_data()['height'], reader.get_meta_data()['width'],
+    W, H = reader.get_meta_data()['size']
     T = tracker.timesteps
     writer = imageio.get_writer(out_vid_path, fps=fps)
     print("Writing output to %s" % out_vid_path)
@@ -89,19 +89,22 @@ def main():
         #t2 = time.time(); print('obj det %.2f seconds' % (t2-t1))
         tracker.update_tracker(detection_info, cur_img)
         #t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
-
-        cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
-
-        rois_np, temporal_rois_np = tracker.generate_all_rois()
         no_actors = len(tracker.active_actors)
+        probs = []
 
-        feed_dict = {input_frames:cur_input_sequence, 
-                     temporal_rois: temporal_rois_np,
-                     temporal_roi_batch_indices: np.zeros(no_actors),
-                     rois:rois_np, 
-                     roi_batch_indices:np.arange(no_actors)}
+        if tracker.active_actors:
 
-        probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+            cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
+
+            rois_np, temporal_rois_np = tracker.generate_all_rois()
+
+            feed_dict = {input_frames:cur_input_sequence, 
+                         temporal_rois: temporal_rois_np,
+                         temporal_roi_batch_indices: np.zeros(no_actors),
+                         rois:rois_np, 
+                         roi_batch_indices:np.arange(no_actors)}
+            #import pdb;pdb.set_trace()
+            probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
         # # Action detection
         # no_actors = len(tracker.active_actors)
         # #batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3], np.uint8)
@@ -146,7 +149,7 @@ def main():
                 print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
                 cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
             act_results.append(cur_results)
-        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, display=False)
+        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, display=DISPLAY)
         writer.append_data(out_img)
         
     writer.close()

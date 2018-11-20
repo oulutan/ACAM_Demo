@@ -245,7 +245,7 @@ class Tracker():
     #     return tube, norm_roi
 
     def generate_all_rois(self):
-        no_actors = len(tracker.active_actors)
+        no_actors = len(self.active_actors)
         rois_np = np.zeros([no_actors, 4])
         temporal_rois_np = np.zeros([no_actors, self.timesteps, 4])
         for bb, actor_info in enumerate(self.active_actors):
@@ -253,15 +253,21 @@ class Tracker():
         #     tube, roi = tracker.crop_person_tube(actor_no)
             norm_roi, full_roi = self.generate_person_tube_roi(actor_no)
             rois_np[bb] = norm_roi
-            temporal_rois_np[nn] = full_roi
+            temporal_rois_np[bb] = full_roi
         return rois_np, temporal_rois_np
 
     def generate_person_tube_roi(self, actor_id):
         actor_info = [act for act in self.active_actors if act['actor_id'] == actor_id][0]
         boxes = actor_info['all_boxes']
+        #if actor_info['length'] < self.timesteps:
+        #    recent_boxes = boxes
+        #    index_offset = (self.timesteps - actor_info['length'] + 1) // 2 
+        #else:
+        #    recent_boxes = boxes[-self.timesteps:]
+        #    index_offset = 0
         if actor_info['length'] < self.timesteps:
             recent_boxes = boxes
-            index_offset = (self.timesteps - actor_info['length']) // 2 
+            index_offset = (self.timesteps - actor_info['length'] + 1) 
         else:
             recent_boxes = boxes[-self.timesteps:]
             index_offset = 0
@@ -277,10 +283,8 @@ class Tracker():
         for rr in range(self.timesteps):
             if rr < index_offset:
                 cur_box = recent_boxes[0]
-            elif rr < (self.timesteps - index_offset):
-                cur_box = recent_boxes[rr - index_offset]
             else:
-                cur_box = recent_boxes[-1]
+                cur_box = recent_boxes[rr - index_offset]
             
             # zero pad so that we dont have to worry about edge cases
             # cur_frame = self.frame_history[rr]
