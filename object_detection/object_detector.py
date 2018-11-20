@@ -140,12 +140,17 @@ class Tracker():
         self.active_actors = actives
         
 
-
-        if len(self.frame_history) == 32:
-            del self.frame_history[0]
-            self.frame_history.append(frame)
-        else:
-            self.frame_history.append(frame)
+        #initialize first
+        if not self.frame_history:
+            for _ in range(self.timesteps):
+                self.frame_history.append(np.zeros([H,W,C], np.uint8))
+        del self.frame_history[0]
+        self.frame_history.append(frame)
+        # if len(self.frame_history) == self.timesteps:
+        #     del self.frame_history[0]
+        #     self.frame_history.append(frame)
+        # else:
+        #     self.frame_history.append(frame)
 
         self.frame_no += 1
 
@@ -204,7 +209,54 @@ class Tracker():
     #     else:
     #         self.frame_history.append(frame)
         
-    def crop_person_tube(self, actor_id, box_size=(400,400)):
+    # def crop_person_tube(self, actor_id, box_size=(400,400)):
+    #     actor_info = [act for act in self.active_actors if act['actor_id'] == actor_id][0]
+    #     boxes = actor_info['all_boxes']
+    #     if actor_info['length'] < self.timesteps:
+    #         recent_boxes = boxes
+    #         index_offset = (self.timesteps - actor_info['length']) // 2 
+    #     else:
+    #         recent_boxes = boxes[-self.timesteps:]
+    #         index_offset = 0
+    #     H,W,C = self.frame_history[-1].shape
+    #     mid_box = recent_boxes[len(recent_boxes)//2]
+    #     # top, left, bottom, right = mid_box
+    #     # edge = max(bottom - top, right - left) / 2.
+    #     edge, norm_roi = generate_edge_and_normalized_roi(mid_box)
+
+    #     tube = np.zeros([self.timesteps] + list(box_size) + [3], np.uint8)
+    #     for rr in range(len(recent_boxes)):
+    #         cur_box = recent_boxes[rr]
+    #         # zero pad so that we dont have to worry about edge cases
+    #         cur_frame = self.frame_history[rr]
+    #         padsize = int(edge * max(H,W))
+    #         cur_frame = np.pad(cur_frame, [(padsize,padsize),(padsize,padsize), (0,0)], 'constant')
+
+    #         top, left, bottom, right = cur_box
+    #         cur_center = (top+bottom)/2., (left+right)/2.
+    #         top, bottom = cur_center[0] - edge, cur_center[0] + edge
+    #         left, right = cur_center[1] - edge, cur_center[1] + edge
+
+    #         top_ind, bottom_ind = int(top * H)+padsize, int(bottom * H)+padsize
+    #         left_ind, right_ind = int(left * W)+padsize, int(right * W)+padsize
+    #         cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
+    #         tube[rr+index_offset,:,:,:] = cv2.resize(cur_image_crop, box_size)
+
+    #     return tube, norm_roi
+
+    def generate_all_rois(self):
+        no_actors = len(tracker.active_actors)
+        rois_np = np.zeros([no_actors, 4])
+        temporal_rois_np = np.zeros([no_actors, self.timesteps, 4])
+        for bb, actor_info in enumerate(self.active_actors):
+            actor_no = actor_info['actor_id']
+        #     tube, roi = tracker.crop_person_tube(actor_no)
+            norm_roi, full_roi = self.generate_person_tube_roi(actor_no)
+            rois_np[bb] = norm_roi
+            temporal_rois_np[nn] = full_roi
+        return rois_np, temporal_rois_np
+
+    def generate_person_tube_roi(self, actor_id):
         actor_info = [act for act in self.active_actors if act['actor_id'] == actor_id][0]
         boxes = actor_info['all_boxes']
         if actor_info['length'] < self.timesteps:
@@ -219,25 +271,35 @@ class Tracker():
         # edge = max(bottom - top, right - left) / 2.
         edge, norm_roi = generate_edge_and_normalized_roi(mid_box)
 
-        tube = np.zeros([self.timesteps] + list(box_size) + [3], np.uint8)
-        for rr in range(len(recent_boxes)):
-            cur_box = recent_boxes[rr]
+        # tube = np.zeros([self.timesteps] + list(box_size) + [3], np.uint8)
+        full_rois = []
+        # for rr in range(len(recent_boxes)):
+        for rr in range(self.timesteps):
+            if rr < index_offset:
+                cur_box = recent_boxes[0]
+            elif rr < (self.timesteps - index_offset):
+                cur_box = recent_boxes[rr - index_offset]
+            else:
+                cur_box = recent_boxes[-1]
+            
             # zero pad so that we dont have to worry about edge cases
-            cur_frame = self.frame_history[rr]
-            padsize = int(edge * max(H,W))
-            cur_frame = np.pad(cur_frame, [(padsize,padsize),(padsize,padsize), (0,0)], 'constant')
+            # cur_frame = self.frame_history[rr]
+            # padsize = int(edge * max(H,W))
+            # cur_frame = np.pad(cur_frame, [(padsize,padsize),(padsize,padsize), (0,0)], 'constant')
 
             top, left, bottom, right = cur_box
             cur_center = (top+bottom)/2., (left+right)/2.
             top, bottom = cur_center[0] - edge, cur_center[0] + edge
             left, right = cur_center[1] - edge, cur_center[1] + edge
 
-            top_ind, bottom_ind = int(top * H)+padsize, int(bottom * H)+padsize
-            left_ind, right_ind = int(left * W)+padsize, int(right * W)+padsize
-            cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
-            tube[rr+index_offset,:,:,:] = cv2.resize(cur_image_crop, box_size)
+            # top_ind, bottom_ind = int(top * H)+padsize, int(bottom * H)+padsize
+            # left_ind, right_ind = int(left * W)+padsize, int(right * W)+padsize
+            # cur_image_crop = cur_frame[top_ind:bottom_ind, left_ind:right_ind]
+            # tube[rr+index_offset,:,:,:] = cv2.resize(cur_image_crop, box_size)
+            full_rois.append([top, left, bottom, right])
+        full_rois_np = np.stack(full_rois, axis=0)
 
-        return tube, norm_roi
+        return norm_roi, full_rois_np
 
 def bbox_interpolate(start_box, end_box, no_interpolate_frames):
     delta = (np.array(end_box) - np.array(start_box)) / float(no_interpolate_frames)

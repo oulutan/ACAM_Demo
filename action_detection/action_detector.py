@@ -86,6 +86,14 @@ class Action_Detector():
             
             pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
         return input_seq, rois, roi_batch_indices, pred_probs
+    
+    def define_inference_with_placeholders_noinput(self, input_seq):
+        with self.act_graph.as_default():
+            rois = tf.placeholder(tf.float32, [None, 4]) # top, left, bottom, right
+            roi_batch_indices = tf.placeholder(tf.int32, [None])
+            
+            pred_probs = self.define_inference(input_seq, rois, roi_batch_indices)
+        return rois, roi_batch_indices, pred_probs
         
 
     ####### MODELS #######
@@ -356,8 +364,24 @@ class Action_Detector():
 
         return i3d_tail_feats
 
-# def temporal_roi_cropping(features, rois, batch_indices, crop_size, temp_rois=False):
-def temporal_roi_cropping(features, rois, batch_indices, crop_size):
+
+    def crop_tubes_in_tf(self, frame_shape):
+        T,H,W,C = frame_shape
+        with self.act_graph.as_default():
+            input_frames = tf.placeholder(tf.float32, [None, T, H,W,C])
+            rois = tf.placeholder(tf.float32, [None, T, 4]) # top, left, bottom, right
+            batch_indices = tf.placeholder(tf.int32, [None])
+
+            # use temporal rois since we track the actor over time
+            cropped_frames = temporal_roi_cropping(input_frames, rois, batch_indices, self.input_size, temp_rois=True)
+    
+        return input_frames, rois, batch_indices, cropped_frames
+
+
+
+
+def temporal_roi_cropping(features, rois, batch_indices, crop_size, temp_rois=False):
+# def temporal_roi_cropping(features, rois, batch_indices, crop_size):
     ''' features is of shape [Batch, T, H, W, C]
         rois [num_boxes, TEMP_RESOLUTION, 4] or [num_boxes, 4] depending on temp_rois flag
         batch_indices [num_boxes]
@@ -367,18 +391,19 @@ def temporal_roi_cropping(features, rois, batch_indices, crop_size):
     _, T, H, W, C = features.shape.as_list()
     num_boxes = tf.shape(rois)[0]
  
-    # if temp_rois:
-    #     # slope = (T-1) / tf.cast(TEMP_RESOLUTION - 1, tf.float32)
-    #     # indices = tf.cast(slope * tf.range(TEMP_RESOLUTION, dtype=tf.float32), tf.int32)
-    #     slope = (TEMP_RESOLUTION-1) / float(T - 1)
-    #     indices = (slope * np.arange(T)).astype(np.int32)
-    #     temporal_rois = tf.gather(rois,indices,axis=1,name='temporalsampling')
-    # else:
-    #     # use the keyframe roi for all time indices
-    #     temporal_rois = tf.expand_dims(rois, axis=1)
-    #     temporal_rois = tf.tile(temporal_rois, [1, T, 1])
-    temporal_rois = tf.expand_dims(rois, axis=1)
-    temporal_rois = tf.tile(temporal_rois, [1, T, 1])
+    if temp_rois:
+        # slope = (T-1) / tf.cast(TEMP_RESOLUTION - 1, tf.float32)
+        # indices = tf.cast(slope * tf.range(TEMP_RESOLUTION, dtype=tf.float32), tf.int32)
+        # slope = (TEMP_RESOLUTION-1) / float(T - 1)
+        # indices = (slope * np.arange(T)).astype(np.int32)
+        # temporal_rois = tf.gather(rois,indices,axis=1,name='temporalsampling')
+        temporal_rois = rois
+    else:
+        # use the keyframe roi for all time indices
+        temporal_rois = tf.expand_dims(rois, axis=1)
+        temporal_rois = tf.tile(temporal_rois, [1, T, 1])
+    # temporal_rois = tf.expand_dims(rois, axis=1)
+    # temporal_rois = tf.tile(temporal_rois, [1, T, 1])
  
     # since we are flattening the temporal dimension and batch dimension
     # into a single dimension, we need new batch_index mapping

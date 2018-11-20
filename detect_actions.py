@@ -46,15 +46,8 @@ def main():
     obj_detector = obj.Object_Detector(obj_detection_graph)
     tracker = obj.Tracker()
 
-    # act_detector = act.Action_Detector('i3d_tail')
-    # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
-    act_detector = act.Action_Detector('soft_attn')
-    #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
-    ckpt_name = 'model_ckpt_soft_attn_ava-23'
-    input_seq, rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders()
     
-    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
-    act_detector.restore_model(ckpt_path)
+
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
@@ -62,8 +55,25 @@ def main():
     fps_divider = 2
     print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
+    H, W = reader.get_meta_data()['height'], reader.get_meta_data()['width'],
+    T = tracker.timesteps
     writer = imageio.get_writer(out_vid_path, fps=fps)
     print("Writing output to %s" % out_vid_path)
+
+    
+    # act_detector = act.Action_Detector('i3d_tail')
+    # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
+    act_detector = act.Action_Detector('soft_attn')
+    #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
+    ckpt_name = 'model_ckpt_soft_attn_ava-23'
+
+    input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    
+    rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
+    
+
+    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
+    act_detector.restore_model(ckpt_path)
 
     frame_cnt = 0
     for cur_img in reader:
@@ -80,36 +90,48 @@ def main():
         tracker.update_tracker(detection_info, cur_img)
         #t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
 
-        # Action detection
+        cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
+
+        rois_np, temporal_rois_np = tracker.generate_all_rois()
         no_actors = len(tracker.active_actors)
-        #batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3], np.uint8)
-        batch_list = []
-        rois_np = np.zeros([no_actors, 4])
-        batch_indices_np = np.array(range(no_actors))
-        for bb, actor_info in enumerate(tracker.active_actors):
-            actor_no = actor_info['actor_id']
-            tube, roi = tracker.crop_person_tube(actor_no)
-            #batch_np[bb, :] = tube
-            batch_list.append(tube)
-            rois_np[bb]= roi
+
+        feed_dict = {input_frames:cur_input_sequence, 
+                     temporal_rois: temporal_rois_np,
+                     temporal_roi_batch_indices: np.zeros(no_actors),
+                     rois:rois_np, 
+                     roi_batch_indices:np.arange(no_actors)}
+
+        probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+        # # Action detection
+        # no_actors = len(tracker.active_actors)
+        # #batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3], np.uint8)
+        # batch_list = []
+        # rois_np = np.zeros([no_actors, 4])
+        # batch_indices_np = np.array(range(no_actors))
+        # for bb, actor_info in enumerate(tracker.active_actors):
+        #     actor_no = actor_info['actor_id']
+        #     tube, roi = tracker.crop_person_tube(actor_no)
+        #     #batch_np[bb, :] = tube
+        #     batch_list.append(tube)
+        #     rois_np[bb]= roi
         #t4 = time.time(); print('cropping %.2f seconds' % (t4-t3))
 
-        if tracker.active_actors:
-            batch_np = np.stack(batch_list, axis=0)
-            max_batch_size = 10
-            prob_list = []
-            cur_index = 0
-            while cur_index < no_actors:
-                cur_batch = batch_np[cur_index:cur_index+max_batch_size]
-                cur_roi = rois_np[cur_index:cur_index+max_batch_size]
-                cur_indices = batch_indices_np[cur_index:cur_index+max_batch_size] - cur_index
-                feed_dict = {input_seq:cur_batch, rois:cur_roi, roi_batch_indices:cur_indices}
-                #t51 = time.time(); print('action before run %.2f seconds' % (t51-t4))
-                cur_probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
-                #t52 = time.time(); print('action after run %.2f seconds' % (t52-t51))
-                prob_list.append(cur_probs)
-                cur_index += max_batch_size
-            probs = np.concatenate(prob_list, axis=0)
+        # if tracker.active_actors:
+        #     batch_np = np.stack(batch_list, axis=0)
+        #     max_batch_size = 10
+        #     prob_list = []
+        #     cur_index = 0
+        #     while cur_index < no_actors:
+        #         cur_batch = batch_np[cur_index:cur_index+max_batch_size]
+        #         cur_roi = rois_np[cur_index:cur_index+max_batch_size]
+        #         cur_indices = batch_indices_np[cur_index:cur_index+max_batch_size] - cur_index
+        #         feed_dict = {input_seq:cur_batch, rois:cur_roi, roi_batch_indices:cur_indices}
+        #         #t51 = time.time(); print('action before run %.2f seconds' % (t51-t4))
+        #         cur_probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+        #         #t52 = time.time(); print('action after run %.2f seconds' % (t52-t51))
+        #         prob_list.append(cur_probs)
+        #         cur_index += max_batch_size
+        #     probs = np.concatenate(prob_list, axis=0)
 
         #t5 = time.time(); print('action %.2f seconds' % (t5-t4))
         # Print top_k probs
