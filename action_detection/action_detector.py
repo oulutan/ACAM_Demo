@@ -132,6 +132,7 @@ class Action_Detector():
             # tail_end_point = 'Mixed_4f'
             final_i3d_feat, end_points = i3d.i3d_tail(roi_box_features, self.is_training, tail_end_point)
             # final_i3d_feat = end_points[tail_end_point]
+            tf.add_to_collection('final_i3d_feats', final_i3d_feat)
             
             
             # flat_feats = self.spatio_temporal_averaging(final_i3d_feat)

@@ -12,7 +12,8 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 import time
-DISPLAY = False
+DISPLAY = True
+SHOW_CAMS = True
 def main():
     parser = argparse.ArgumentParser()
 
@@ -57,8 +58,9 @@ def main():
     fps = reader.get_meta_data()['fps'] // fps_divider
     W, H = reader.get_meta_data()['size']
     T = tracker.timesteps
-    writer = imageio.get_writer(out_vid_path, fps=fps)
-    print("Writing output to %s" % out_vid_path)
+    if not DISPLAY:
+        writer = imageio.get_writer(out_vid_path, fps=fps)
+        print("Writing output to %s" % out_vid_path)
 
     
     # act_detector = act.Action_Detector('i3d_tail')
@@ -108,8 +110,14 @@ def main():
                          temporal_roi_batch_indices: np.zeros(no_actors),
                          rois:rois_np, 
                          roi_batch_indices:np.arange(no_actors)}
+            run_dict = {'pred_probs': pred_probs}
+            if SHOW_CAMS:
+                run_dict['final_i3d_feats'] = tf.get_collection('final_i3d_feats')[0]
+                run_dict['cls_weights'] = [var for var in tf.global_variables() if var.name == "CLS_Logits/kernel:0"][0]
             #import pdb;pdb.set_trace()
-            probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+            out_dict = act_detector.session.run(run_dict, feed_dict=feed_dict)
+            probs = out_dict['pred_probs']
+
         t5 = time.time(); print('action %.2f seconds' % (t5-t3))
         # # Action detection
         # no_actors = len(tracker.active_actors)
@@ -155,15 +163,22 @@ def main():
                 print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
                 cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
             act_results.append(cur_results)
-        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, no_actors, display=DISPLAY)
-        writer.append_data(out_img)
+        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, no_actors)
+        if SHOW_CAMS:
+
+        if DISPLAY: 
+            cv2.imshow('results', out_img)
+            cv2.waitKey(10)
+        else:
+            writer.append_data(out_img)
         
-    writer.close()
+    if not DISPLAY:
+        writer.close()
 
 
 np.random.seed(10)
 COLORS = np.random.randint(0, 255, [1000, 3])
-def visualize_detection_results(img_np, active_actors, act_results, no_actors, display=True):
+def visualize_detection_results(img_np, active_actors, act_results, no_actors):
     score_th = 0.30
     action_th = 0.20
 
@@ -211,10 +226,10 @@ def visualize_detection_results(img_np, active_actors, act_results, no_actors, d
             offset = aa*10
             cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
 
-    if display: 
-        cv2.imshow('results', disp_img)
-        cv2.waitKey(10)
-    return disp_img
+
+def visualize_cams(image, input_frames, out_dict, actor_idx):
+    classes =
+
 
 if __name__ == '__main__':
     main()
