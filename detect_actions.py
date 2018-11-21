@@ -165,7 +165,7 @@ def main():
             act_results.append(cur_results)
         out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, no_actors)
         if SHOW_CAMS:
-
+            out_img = visualize_cams(out_img, cur_input_sequence, out_dict, 0)
         if DISPLAY: 
             cv2.imshow('results', out_img)
             cv2.waitKey(10)
@@ -228,7 +228,44 @@ def visualize_detection_results(img_np, active_actors, act_results, no_actors):
 
 
 def visualize_cams(image, input_frames, out_dict, actor_idx):
-    classes =
+    classes = ["walk", "bend", "carry"]
+    action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in class_list])]
+
+    feature_activations = out_dict['final_i3d_feats']
+    cls_weights = out_dict['cls_weights']
+    class_maps = np.matmul(feature_activations, cls_weights)
+    min_val = np.min(class_maps[:,:, :, :, :])
+    max_val = np.max(class_maps[:,:, :, :, :]) - min_val
+
+    normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
+
+    t_feats = feature_activations.shape[1]
+    t_input = input_frames.shape[1]
+    index_diff = (t_input) // (t_feats+1)
+
+    img_to_show = cv2.resize(image.copy(), (800,400))
+    img_to_concat = np.zeros((400, 800), np.uin8)
+    for tt in range(t_feats):
+        cur_cam = normalized_cmaps[actor_idx, tt,:,:, action_classes[0]]
+        cur_frame = input_frames[actor_idx, (tt+1) * index_diff]
+
+        resized_cam = cv2.resize(cur_cam, (100,100))
+        colored_cam = cv2.applyColorMap(resized_cam, cv2.COLORMAP_JET)
+
+        overlay = cv2.resize(cur_frame.copy(), (100,100))
+        overlay = cv2.addWeighted(overlay, 0.5, colored_map, 0.5, 0)
+
+        img_to_concat[0:100, tt*100:(tt+1)*100, :] = overlay
+
+    final_image = np.concatenate([img_to_show, img_to_concat], axis=1)
+    return final_image
+
+
+
+
+
+
+    
 
 
 if __name__ == '__main__':
