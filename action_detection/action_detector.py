@@ -302,7 +302,7 @@ class Action_Detector():
             # Multiply attention map with context features. Now this new feature represents the roi
             gathered_context = tf.gather(context_features, cur_b_idx, axis=0, name='ContextGather')
             soft_attention_feats = tf.multiply(attention_map, gathered_context)
-        class_feats = self.i3d_tail_model(soft_attention_feats, is_training)
+        class_feats = self.i3d_tail_model(soft_attention_feats)
         return class_feats
 
         # with tf.variable_scope('Tail_I3D'):

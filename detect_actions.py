@@ -51,8 +51,8 @@ def main():
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
-    #fps_divider = 2
     fps_divider = 2
+    #fps_divider = 1
     print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
     W, H = reader.get_meta_data()['size']
@@ -65,7 +65,8 @@ def main():
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn')
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
-    ckpt_name = 'model_ckpt_soft_attn_ava-23'
+    #ckpt_name = 'model_ckpt_soft_attn_ava-23'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
 
     input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     
@@ -83,12 +84,12 @@ def main():
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
         expanded_img = np.expand_dims(cur_img, axis=0)
-        #t1 = time.time()
+        t1 = time.time()
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
         detection_info = [info[0] for info in detection_list]
-        #t2 = time.time(); print('obj det %.2f seconds' % (t2-t1))
+        t2 = time.time(); print('obj det %.2f seconds' % (t2-t1))
         tracker.update_tracker(detection_info, cur_img)
-        #t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
+        t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
         no_actors = len(tracker.active_actors)
         probs = []
 
@@ -97,6 +98,10 @@ def main():
             cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
 
             rois_np, temporal_rois_np = tracker.generate_all_rois()
+            if no_actors > 14:
+                no_actors = 14
+                rois_np = rois_np[:14]
+                temporal_rois_np = temporal_rois_np[:14]
 
             feed_dict = {input_frames:cur_input_sequence, 
                          temporal_rois: temporal_rois_np,
@@ -105,6 +110,7 @@ def main():
                          roi_batch_indices:np.arange(no_actors)}
             #import pdb;pdb.set_trace()
             probs = act_detector.session.run(pred_probs, feed_dict=feed_dict)
+        t5 = time.time(); print('action %.2f seconds' % (t5-t3))
         # # Action detection
         # no_actors = len(tracker.active_actors)
         # #batch_np = np.zeros([no_actors, act_detector.timesteps] + act_detector.input_size + [3], np.uint8)
@@ -149,7 +155,7 @@ def main():
                 print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
                 cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
             act_results.append(cur_results)
-        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, display=DISPLAY)
+        out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, no_actors, display=DISPLAY)
         writer.append_data(out_img)
         
     writer.close()
@@ -157,14 +163,15 @@ def main():
 
 np.random.seed(10)
 COLORS = np.random.randint(0, 255, [1000, 3])
-def visualize_detection_results(img_np, active_actors, act_results, display=True):
+def visualize_detection_results(img_np, active_actors, act_results, no_actors, display=True):
     score_th = 0.30
     action_th = 0.20
 
     # copy the original image first
     disp_img = np.copy(img_np)
     H, W, C = img_np.shape
-    for ii in range(len(active_actors)):
+    #for ii in range(len(active_actors)):
+    for ii in range(no_actors):
         cur_actor = active_actors[ii]
         cur_act_results = act_results[ii]
         cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
@@ -206,7 +213,7 @@ def visualize_detection_results(img_np, active_actors, act_results, display=True
 
     if display: 
         cv2.imshow('results', disp_img)
-        cv2.waitKey(0)
+        cv2.waitKey(10)
     return disp_img
 
 if __name__ == '__main__':
