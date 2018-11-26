@@ -12,18 +12,20 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 import time
-DISPLAY = True
-SHOW_CAMS = True
+DISPLAY = False
+SHOW_CAMS = False
 def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-v', '--video_path', type=str, required=True)
 
     args = parser.parse_args()
+    
+    actor_to_display = 6 # for cams
 
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
-    out_vid_path = "./output_videos/%s_output.mp4" % basename
+    out_vid_path = "./output_videos/%s_output.mp4" % (basename if not SHOW_CAMS else basename+'_cams_actor_%.2d' % actor_to_display)
     #out_vid_path = './output_videos/testing.mp4'
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
@@ -52,8 +54,8 @@ def main():
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
-    fps_divider = 2
-    #fps_divider = 1
+    #fps_divider = 2
+    fps_divider = 1
     print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
     W, H = reader.get_meta_data()['size']
@@ -112,8 +114,11 @@ def main():
                          roi_batch_indices:np.arange(no_actors)}
             run_dict = {'pred_probs': pred_probs}
             if SHOW_CAMS:
-                run_dict['final_i3d_feats'] = tf.get_collection('final_i3d_feats')[0]
-                run_dict['cls_weights'] = [var for var in tf.global_variables() if var.name == "CLS_Logits/kernel:0"][0]
+                run_dict['cropped_frames'] = cropped_frames
+                #import pdb;pdb.set_trace()
+                run_dict['final_i3d_feats'] =  act_detector.act_graph.get_collection('final_i3d_feats')[0]
+                #run_dict['cls_weights'] = [var for var in tf.global_variables() if var.name == "CLS_Logits/kernel:0"][0]
+                run_dict['cls_weights'] = act_detector.act_graph.get_collection('variables')[-2] # this is the kernel
             #import pdb;pdb.set_trace()
             out_dict = act_detector.session.run(run_dict, feed_dict=feed_dict)
             probs = out_dict['pred_probs']
@@ -165,9 +170,16 @@ def main():
             act_results.append(cur_results)
         out_img = visualize_detection_results(cur_img, tracker.active_actors, act_results, no_actors)
         if SHOW_CAMS:
-            out_img = visualize_cams(out_img, cur_input_sequence, out_dict, 0)
+            if tracker.active_actors:
+                actor_indices = [ii for ii in range(no_actors) if tracker.active_actors[ii]['actor_id'] == actor_to_display]
+                if actor_indices:
+                    out_img = visualize_cams(out_img, cur_input_sequence, out_dict, actor_indices[0])
+                else:
+                    continue
+            else:
+                continue
         if DISPLAY: 
-            cv2.imshow('results', out_img)
+            cv2.imshow('results', out_img[:,:,::-1])
             cv2.waitKey(10)
         else:
             writer.append_data(out_img)
@@ -226,13 +238,20 @@ def visualize_detection_results(img_np, active_actors, act_results, no_actors):
             offset = aa*10
             cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
 
+    return disp_img
+
 
 def visualize_cams(image, input_frames, out_dict, actor_idx):
-    classes = ["walk", "bend", "carry"]
-    action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in class_list])]
+    #classes = ["walk", "bend", "carry"]
+    #classes = ["sit", "ride"]
+    classes = ["talk to", "watch (a", "listen to"]
+    action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
 
     feature_activations = out_dict['final_i3d_feats']
     cls_weights = out_dict['cls_weights']
+    input_frames = out_dict['cropped_frames'].astype(np.uint8)
+    probs = out_dict["pred_probs"]
+
     class_maps = np.matmul(feature_activations, cls_weights)
     min_val = np.min(class_maps[:,:, :, :, :])
     max_val = np.max(class_maps[:,:, :, :, :]) - min_val
@@ -243,22 +262,30 @@ def visualize_cams(image, input_frames, out_dict, actor_idx):
     t_input = input_frames.shape[1]
     index_diff = (t_input) // (t_feats+1)
 
-    img_to_show = cv2.resize(image.copy(), (800,400))
-    img_to_concat = np.zeros((400, 800), np.uin8)
-    for tt in range(t_feats):
-        cur_cam = normalized_cmaps[actor_idx, tt,:,:, action_classes[0]]
-        cur_frame = input_frames[actor_idx, (tt+1) * index_diff]
+    img_new_height = 400
+    img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
+    img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
+    #img_to_concat = np.zeros((400, 800, 3), np.uint8)
+    img_to_concat = np.zeros((400, 400, 3), np.uint8)
+    for cc in range(len(action_classes)):
+        cur_cls_idx = action_classes[cc]
+        act_str = act.ACTION_STRINGS[action_classes[cc]]
+        message = "%s:%%%.2d" % (act_str[:20], 100*probs[actor_idx, cur_cls_idx])
+        for tt in range(t_feats):
+            cur_cam = normalized_cmaps[actor_idx, tt,:,:, cur_cls_idx]
+            cur_frame = input_frames[actor_idx, (tt+1) * index_diff, :,:,::-1]
 
-        resized_cam = cv2.resize(cur_cam, (100,100))
-        colored_cam = cv2.applyColorMap(resized_cam, cv2.COLORMAP_JET)
+            resized_cam = cv2.resize(cur_cam, (100,100))
+            colored_cam = cv2.applyColorMap(resized_cam, cv2.COLORMAP_JET)
 
-        overlay = cv2.resize(cur_frame.copy(), (100,100))
-        overlay = cv2.addWeighted(overlay, 0.5, colored_map, 0.5, 0)
+            overlay = cv2.resize(cur_frame.copy(), (100,100))
+            overlay = cv2.addWeighted(overlay, 0.5, colored_cam, 0.5, 0)
 
-        img_to_concat[0:100, tt*100:(tt+1)*100, :] = overlay
+            img_to_concat[cc*125:cc*125+100, tt*100:(tt+1)*100, :] = overlay
+        cv2.putText(img_to_concat, message, (20, 13+100+125*cc), 0, 0.5, (255,255,255), 1)
 
     final_image = np.concatenate([img_to_show, img_to_concat], axis=1)
-    return final_image
+    return final_image[:,:,::-1]
 
 
 
