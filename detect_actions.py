@@ -72,9 +72,9 @@ def main():
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
 
-    # input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     memory_size = act_detector.timesteps - action_freq
-    updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf_with_memory([T,H,W,3], memory_size)
     
     rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
     
@@ -110,8 +110,8 @@ def main():
                 rois_np = rois_np[:14]
                 temporal_rois_np = temporal_rois_np[:14]
 
-            # feed_dict = {input_frames:cur_input_sequence, 
-            feed_dict = {updated_frames:cur_input_sequence[-action_freq:], # only update last #action_freq frames
+            #feed_dict = {input_frames:cur_input_sequence, 
+            feed_dict = {updated_frames:cur_input_sequence[0:1,-action_freq:], # only update last #action_freq frames
                          temporal_rois: temporal_rois_np,
                          temporal_roi_batch_indices: np.zeros(no_actors),
                          rois:rois_np, 

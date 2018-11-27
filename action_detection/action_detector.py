@@ -384,9 +384,9 @@ class Action_Detector():
         T,H,W,C = frame_shape
         no_updated_frames = T - memory_size
         with self.act_graph.as_default():
-            updated_frames, combined_sequence = memory_placeholder(tf.float32, [1, T, H,W,C])
-            rois = tf.placeholder(tf.float32, [1, T, 4]) # top, left, bottom, right
-            batch_indices = tf.placeholder(tf.int32, [1])
+            updated_frames, combined_sequence = memory_placeholder(tf.float32, [1, T, H,W,C], memory_size)
+            rois = tf.placeholder(tf.float32, [None, T, 4]) # top, left, bottom, right
+            batch_indices = tf.placeholder(tf.int32, [None])
 
             # use temporal rois since we track the actor over time
             cropped_frames = temporal_roi_cropping(combined_sequence, rois, batch_indices, self.input_size, temp_rois=True)
@@ -397,6 +397,7 @@ def memory_placeholder(dtype, shape, memory_size, name=None):
     ''' Every time we run the action detector we need to upload all 32 frames to the GPUs with feeddict
         This is slow and redundant as most of the frames are shared with the previous run.
         Why not just shift the frames?
+        about 30-40% speed improvement
     '''
     T = shape[1]
 
