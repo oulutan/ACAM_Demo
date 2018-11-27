@@ -82,7 +82,30 @@ class Tracker():
         self.tracker = ds_Tracker(metric)
         #self.results = []
 
+    def add_frame(self, frame):
+        ''' Adds a new frame to the history.
+            This is used when we dont want to run the obj detection and traking but want to keep the frames
+            for action detection. 
+        '''
+        #initialize first
+        if not self.frame_history:
+            for _ in range(self.timesteps):
+                self.frame_history.append(np.zeros([H,W,C], np.uint8))
+        del self.frame_history[0]
+        self.frame_history.append(frame)
+        # if len(self.frame_history) == self.timesteps:
+        #     del self.frame_history[0]
+        #     self.frame_history.append(frame)
+        # else:
+        #     self.frame_history.append(frame)
+
+        self.frame_no += 1
+
+
     def update_tracker(self, detection_info, frame):
+        ''' Takes the frame and the results from the object detection
+            Updates the tracker wwith the current detections and creates new tracks
+        '''
         score_th = 0.30
 
         boxes, scores, classes, num_detections = detection_info

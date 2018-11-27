@@ -12,7 +12,7 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 import time
-DISPLAY = False
+DISPLAY = True
 SHOW_CAMS = False
 def main():
     parser = argparse.ArgumentParser()
@@ -54,8 +54,8 @@ def main():
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
-    #fps_divider = 2
-    fps_divider = 1
+    fps_divider = 16
+    # fps_divider = 1
     print('Fps divider is %i' % fps_divider)
     fps = reader.get_meta_data()['fps'] // fps_divider
     W, H = reader.get_meta_data()['size']
@@ -84,6 +84,7 @@ def main():
     for cur_img in reader:
         frame_cnt += 1
         if frame_cnt % fps_divider != 0: # or frame_cnt < 60:
+            tracker.add_frame(cur_img)
             continue
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
