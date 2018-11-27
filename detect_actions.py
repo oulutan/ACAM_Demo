@@ -54,10 +54,10 @@ def main():
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
-    fps_divider = 8
+    action_freq = 8
     # fps_divider = 1
-    print('Fps divider is %i' % fps_divider)
-    fps = reader.get_meta_data()['fps'] // fps_divider
+    print('Running actions every %i frame' % action_freq)
+    fps = reader.get_meta_data()['fps'] #// fps_divider
     W, H = reader.get_meta_data()['size']
     T = tracker.timesteps
     if not DISPLAY:
@@ -72,7 +72,9 @@ def main():
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
 
-    input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    # input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    memory_size = act_detector.timesteps - action_freq
+    updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     
     rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
     
@@ -97,7 +99,7 @@ def main():
         t3 = time.time(); print('tracker %.2f seconds' % (t3-t2))
         no_actors = len(tracker.active_actors)
 
-        if tracker.active_actors and frame_cnt % fps_divider == 0:
+        if tracker.active_actors and frame_cnt % action_freq == 0:
             probs = []
 
             cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
@@ -108,7 +110,8 @@ def main():
                 rois_np = rois_np[:14]
                 temporal_rois_np = temporal_rois_np[:14]
 
-            feed_dict = {input_frames:cur_input_sequence, 
+            # feed_dict = {input_frames:cur_input_sequence, 
+            feed_dict = {updated_frames:cur_input_sequence[-action_freq:], # only update last #action_freq frames
                          temporal_rois: temporal_rois_np,
                          temporal_roi_batch_indices: np.zeros(no_actors),
                          rois:rois_np, 

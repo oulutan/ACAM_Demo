@@ -379,6 +379,43 @@ class Action_Detector():
             cropped_frames = temporal_roi_cropping(input_frames, rois, batch_indices, self.input_size, temp_rois=True)
     
         return input_frames, rois, batch_indices, cropped_frames
+    
+    def crop_tubes_in_tf_with_memory(self, frame_shape, memory_size):
+        T,H,W,C = frame_shape
+        no_updated_frames = T - memory_size
+        with self.act_graph.as_default():
+            updated_frames, combined_sequence = memory_placeholder(tf.float32, [1, T, H,W,C])
+            rois = tf.placeholder(tf.float32, [1, T, 4]) # top, left, bottom, right
+            batch_indices = tf.placeholder(tf.int32, [1])
+
+            # use temporal rois since we track the actor over time
+            cropped_frames = temporal_roi_cropping(combined_sequence, rois, batch_indices, self.input_size, temp_rois=True)
+    
+        return updated_frames, rois, batch_indices, cropped_frames
+
+def memory_placeholder(dtype, shape, memory_size, name=None):
+    ''' Every time we run the action detector we need to upload all 32 frames to the GPUs with feeddict
+        This is slow and redundant as most of the frames are shared with the previous run.
+        Why not just shift the frames?
+    '''
+    T = shape[1]
+
+    no_updated_frames = T - memory_size
+    updated_shape = [1, no_updated_frames]+shape[2:]
+    updated_frames = tf.placeholder(dtype, updated_shape)
+
+    memory_shape = [1, memory_size] + shape[2:]
+    memory_frames = tf.Variable(initial_value=np.zeros(memory_shape), dtype=np.float32, trainable=False)
+
+    combined_sequence = tf.concat([memory_frames, updated_frames], axis=1)
+    # update operation for the memory, move the new frames to the memory for the next run
+    update_memory = tf.assign(memory_frames, combined_sequence[0:1, -memory_size:])
+
+    with tf.get_default_graph().control_dependencies([update_memory]):
+        combined_sequence = tf.identity(combined_sequence)
+
+    return updated_frames, combined_sequence
+
 
 
 
