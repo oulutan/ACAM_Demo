@@ -79,7 +79,8 @@ class Tracker():
         self.encoder = create_box_encoder(MODEL_CKPT, batch_size=16)
         metric = nn_matching.NearestNeighborDistanceMetric(
                 "cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
-        self.tracker = ds_Tracker(metric)
+        #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=3)
+        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=1)
         #self.results = []
 
     def add_frame(self, frame):
@@ -87,6 +88,7 @@ class Tracker():
             This is used when we dont want to run the obj detection and traking but want to keep the frames
             for action detection. 
         '''
+        H,W,C = frame.shape
         #initialize first
         if not self.frame_history:
             for _ in range(self.timesteps):
