@@ -83,25 +83,25 @@ class Tracker():
         self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=1)
         #self.results = []
 
-    def add_frame(self, frame):
-        ''' Adds a new frame to the history.
-            This is used when we dont want to run the obj detection and traking but want to keep the frames
-            for action detection. 
-        '''
-        H,W,C = frame.shape
-        #initialize first
-        if not self.frame_history:
-            for _ in range(self.timesteps):
-                self.frame_history.append(np.zeros([H,W,C], np.uint8))
-        del self.frame_history[0]
-        self.frame_history.append(frame)
-        # if len(self.frame_history) == self.timesteps:
-        #     del self.frame_history[0]
-        #     self.frame_history.append(frame)
-        # else:
-        #     self.frame_history.append(frame)
+    # def add_frame(self, frame):
+    #     ''' Adds a new frame to the history.
+    #         This is used when we dont want to run the obj detection and traking but want to keep the frames
+    #         for action detection. 
+    #     '''
+    #     H,W,C = frame.shape
+    #     #initialize first
+    #     if not self.frame_history:
+    #         for _ in range(self.timesteps):
+    #             self.frame_history.append(np.zeros([H,W,C], np.uint8))
+    #     del self.frame_history[0]
+    #     self.frame_history.append(frame)
+    #     # if len(self.frame_history) == self.timesteps:
+    #     #     del self.frame_history[0]
+    #     #     self.frame_history.append(frame)
+    #     # else:
+    #     #     self.frame_history.append(frame)
 
-        self.frame_no += 1
+    #     self.frame_no += 1
 
 
     def update_tracker(self, detection_info, frame):
@@ -166,11 +166,12 @@ class Tracker():
         
 
         #initialize first
-        if not self.frame_history:
-            for _ in range(self.timesteps):
-                self.frame_history.append(np.zeros([H,W,C], np.uint8))
-        del self.frame_history[0]
+        #if not self.frame_history:
+        #    for _ in range(2*self.timesteps):
+        #        self.frame_history.append(np.zeros([H,W,C], np.uint8))
         self.frame_history.append(frame)
+        if len(self.frame_history) > 2*self.timesteps:
+            del self.frame_history[0]
         # if len(self.frame_history) == self.timesteps:
         #     del self.frame_history[0]
         #     self.frame_history.append(frame)

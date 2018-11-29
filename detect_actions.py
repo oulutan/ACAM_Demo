@@ -37,10 +37,10 @@ def main():
     ## Good and Faster
     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Fastest
-    obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 
     # NAS
-    # obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -86,7 +86,7 @@ def main():
     frame_cnt = 0
     for cur_img in reader:
         frame_cnt += 1
-        tracker.add_frame(cur_img)
+        #tracker.add_frame(cur_img)
         print("frame_cnt: %i" %frame_cnt)
         # Object Detection
         expanded_img = np.expand_dims(cur_img, axis=0)
