@@ -12,7 +12,7 @@ import object_detection.object_detector as obj
 import action_detection.action_detector as act
 
 import time
-DISPLAY = True
+DISPLAY = False
 SHOW_CAMS = False
 def main():
     parser = argparse.ArgumentParser()
@@ -37,7 +37,7 @@ def main():
     ## Good and Faster
     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Fastest
-    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 
     # NAS
     obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
@@ -173,21 +173,23 @@ def main():
 
         #t5 = time.time(); print('action %.2f seconds' % (t5-t4))
         # Print top_k probs
-        out_img = visualize_detection_results(cur_img, tracker.active_actors, prob_dict)
-        if SHOW_CAMS:
-            if tracker.active_actors:
-                actor_indices = [ii for ii in range(no_actors) if tracker.active_actors[ii]['actor_id'] == actor_to_display]
-                if actor_indices:
-                    out_img = visualize_cams(out_img, cur_input_sequence, out_dict, actor_indices[0])
+        #out_img = visualize_detection_results(cur_img, tracker.active_actors, prob_dict)
+        if frame_cnt > 16:
+            out_img = visualize_detection_results(tracker.frame_history[-16], tracker.active_actors, prob_dict)
+            if SHOW_CAMS:
+                if tracker.active_actors:
+                    actor_indices = [ii for ii in range(no_actors) if tracker.active_actors[ii]['actor_id'] == actor_to_display]
+                    if actor_indices:
+                        out_img = visualize_cams(out_img, cur_input_sequence, out_dict, actor_indices[0])
+                    else:
+                        continue
                 else:
                     continue
+            if DISPLAY: 
+                cv2.imshow('results', out_img[:,:,::-1])
+                cv2.waitKey(10)
             else:
-                continue
-        if DISPLAY: 
-            cv2.imshow('results', out_img[:,:,::-1])
-            cv2.waitKey(10)
-        else:
-            writer.append_data(out_img)
+                writer.append_data(out_img)
         
     if not DISPLAY:
         writer.close()
@@ -207,7 +209,10 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         cur_actor = active_actors[ii]
         actor_id = cur_actor['actor_id']
         cur_act_results = prob_dict[actor_id] if actor_id in prob_dict else []
-        cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
+        try:
+            cur_box, cur_score, cur_class = cur_actor['all_boxes'][-16], cur_actor['all_scores'][0], 1
+        except IndexError:
+            continue
         
         if cur_score < score_th: 
             continue
