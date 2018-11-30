@@ -14,7 +14,7 @@ import action_detection.action_detector as act
 from multiprocessing import Process, Queue
 
 import time
-DISPLAY = False
+DISPLAY = True
 SHOW_CAMS = False
 
 ACTION_FREQ = 8
@@ -28,6 +28,8 @@ def read_frames(reader, frame_q):
 
 # object detector and tracker
 def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+    main_folder = "./"
     ## Best
     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Good and Faster
@@ -56,13 +58,15 @@ def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
 
 
 # Action detector
-def run_act_detector(act_detector, shape, detection_q, actions_q):
+def run_act_detector(shape, detection_q, actions_q):
+    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn')
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+    main_folder = "./"
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     memory_size = act_detector.timesteps - ACTION_FREQ
@@ -111,7 +115,7 @@ def run_act_detector(act_detector, shape, detection_q, actions_q):
         for bb in range(no_actors):
             act_probs = probs[bb]
             order = np.argsort(act_probs)[::-1]
-            cur_actor_id = tracker.active_actors[bb]['actor_id']
+            cur_actor_id = active_actors[bb]['actor_id']
             print("Person %i" % cur_actor_id)
             cur_results = []
             for pp in range(print_top_k):
@@ -170,10 +174,13 @@ def main():
     print('Running actions every %i frame' % ACTION_FREQ)
     fps = reader.get_meta_data()['fps'] #// fps_divider
     W, H = reader.get_meta_data()['size']
-    T = tracker.timesteps
+    #T = tracker.timesteps
+    T = 32
     if not DISPLAY:
         writer = imageio.get_writer(out_vid_path, fps=fps)
         print("Writing output to %s" % out_vid_path)
+    else:
+        writer = None
 
     shape = [T,H,W,3]
 
@@ -186,7 +193,7 @@ def main():
 
     frame_reader_p = Process(target=read_frames, args=(reader, frame_q))
     obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
-    action_detector_p = Process(target=run_act_detector, args=(act_detector, shape, tf_pointers, detection_q, actions_q))
+    action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q))
     visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q))
 
     processes = [frame_reader_p, obj_detector_p, action_detector_p, visualization_p]
@@ -217,7 +224,7 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         cur_actor = active_actors[ii]
         actor_id = cur_actor['actor_id']
         cur_act_results = prob_dict[actor_id] if actor_id in prob_dict else []
-        cur_box, cur_score, cur_class = cur_actor['all_boxes'], cur_actor['all_scores'], 1
+        cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][0], 1
         
         if cur_score < score_th: 
             continue
