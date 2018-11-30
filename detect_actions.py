@@ -102,7 +102,7 @@ def main():
         if tracker.active_actors and frame_cnt % action_freq == 0:
             probs = []
 
-            cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history, axis=0), axis=0)
+            cur_input_sequence = np.expand_dims(np.stack(tracker.frame_history[-action_freq:], axis=0), axis=0)
 
             rois_np, temporal_rois_np = tracker.generate_all_rois()
             if no_actors > 14:
@@ -111,7 +111,7 @@ def main():
                 temporal_rois_np = temporal_rois_np[:14]
 
             #feed_dict = {input_frames:cur_input_sequence, 
-            feed_dict = {updated_frames:cur_input_sequence[0:1,-action_freq:], # only update last #action_freq frames
+            feed_dict = {updated_frames:cur_input_sequence, # only update last #action_freq frames
                          temporal_rois: temporal_rois_np,
                          temporal_roi_batch_indices: np.zeros(no_actors),
                          rois:rois_np, 
