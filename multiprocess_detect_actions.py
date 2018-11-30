@@ -53,8 +53,14 @@ def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
         detection_info = [info[0] for info in detection_list]
         tracker.update_tracker(detection_info, cur_img)
         rois_np, temporal_rois_np = tracker.generate_all_rois()
-        detection_q.put([cur_img, tracker.active_actors[:], rois_np, temporal_rois_np])
-        det_vis_q.put([cur_img, tracker.active_actors[:]])
+        actors_snapshot = []
+        for cur_actor in tracker.active_actors:
+            act_id = cur_actor['actor_id']
+            act_box = cur_actor['all_boxes'][-1][:]
+            act_score = cur_actor['all_scores'][-1]
+            actors_snapshot.append({'actor_id':act_id, 'all_boxes':[act_box], 'all_scores':[act_score]})
+        detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+        det_vis_q.put([cur_img, actors_snapshot])
 
 
 # Action detector
@@ -224,7 +230,7 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         cur_actor = active_actors[ii]
         actor_id = cur_actor['actor_id']
         cur_act_results = prob_dict[actor_id] if actor_id in prob_dict else []
-        cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][0], 1
+        cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
         
         if cur_score < score_th: 
             continue
