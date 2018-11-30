@@ -121,8 +121,8 @@ def main():
 
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
-    out_vid_path = "./output_videos/%s_output.mp4" % (basename if not SHOW_CAMS else basename+'_cams_actor_%.2d' % actor_to_display)
-    #out_vid_path = './output_videos/testing.mp4'
+    #out_vid_path = "./output_videos/%s_output.mp4" % (basename if not SHOW_CAMS else basename+'_cams_actor_%.2d' % actor_to_display)
+    out_vid_path = './output_videos/testing.mp4'
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
     # out_vid_path = 'output.mp4'
@@ -149,7 +149,7 @@ def main():
     reader = imageio.get_reader(video_path, 'ffmpeg')
     
     # fps_divider = 1
-    print('Running actions every %i frame' % action_freq)
+    print('Running actions every %i frame' % ACTION_FREQ)
     fps = reader.get_meta_data()['fps'] #// fps_divider
     W, H = reader.get_meta_data()['size']
     T = tracker.timesteps
@@ -166,7 +166,7 @@ def main():
     ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
-    memory_size = act_detector.timesteps - action_freq
+    memory_size = act_detector.timesteps - ACTION_FREQ
     updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf_with_memory([T,H,W,3], memory_size)
     
     rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
