@@ -27,7 +27,23 @@ def read_frames(reader, frame_q):
         frame_q.put(cur_img)
 
 # object detector and tracker
-def run_obj_det_and_track(obj_detector, tracker, frame_q, detection_q, det_vis_q):
+def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
+    ## Best
+    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Good and Faster
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Fastest
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+
+    # NAS
+    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+
+
+    print("Loading object detection model at %s" % obj_detection_graph)
+
+
+    obj_detector = obj.Object_Detector(obj_detection_graph)
+    tracker = obj.Tracker()
     while True:
         cur_img = frame_q.get()
         expanded_img = np.expand_dims(cur_img, axis=0)
@@ -40,8 +56,25 @@ def run_obj_det_and_track(obj_detector, tracker, frame_q, detection_q, det_vis_q
 
 
 # Action detector
-def run_act_detector(act_detector, tf_pointers, detection_q, actions_q):
-    updated_frames, temporal_rois, temporal_roi_batch_indices, rois, roi_batch_indices, pred_probs = tf_pointers
+def run_act_detector(act_detector, shape, detection_q, actions_q):
+    # act_detector = act.Action_Detector('i3d_tail')
+    # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
+    act_detector = act.Action_Detector('soft_attn')
+    #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
+    #ckpt_name = 'model_ckpt_soft_attn_ava-23'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+
+    #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
+    memory_size = act_detector.timesteps - ACTION_FREQ
+    updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf_with_memory(shape, memory_size)
+    
+    rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
+    
+
+    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
+    act_detector.restore_model(ckpt_path)
+
+
     while True:
         images = []
         for _ in range(ACTION_FREQ):
@@ -128,22 +161,7 @@ def main():
     # out_vid_path = 'output.mp4'
 
     main_folder = './'
-    ## Best
-    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Good and Faster
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Fastest
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-
-    # NAS
-    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
-
-
-    print("Loading object detection model at %s" % obj_detection_graph)
-
-
-    obj_detector = obj.Object_Detector(obj_detection_graph)
-    tracker = obj.Tracker()
+    
 
     print("Reading video file %s" % video_path)
     reader = imageio.get_reader(video_path, 'ffmpeg')
@@ -157,24 +175,9 @@ def main():
         writer = imageio.get_writer(out_vid_path, fps=fps)
         print("Writing output to %s" % out_vid_path)
 
-    
-    # act_detector = act.Action_Detector('i3d_tail')
-    # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
-    act_detector = act.Action_Detector('soft_attn')
-    #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
-    #ckpt_name = 'model_ckpt_soft_attn_ava-23'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+    shape = [T,H,W,3]
 
-    #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
-    memory_size = act_detector.timesteps - ACTION_FREQ
-    updated_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf_with_memory([T,H,W,3], memory_size)
     
-    rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
-    
-    tf_pointers = [updated_frames, temporal_rois, temporal_roi_batch_indices, rois, roi_batch_indices, pred_probs]
-
-    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
-    act_detector.restore_model(ckpt_path)
 
     frame_q = Queue()
     detection_q = Queue()
@@ -182,8 +185,8 @@ def main():
     actions_q = Queue()
 
     frame_reader_p = Process(target=read_frames, args=(reader, frame_q))
-    obj_detector_p = Process(target=run_obj_det_and_track, args=(obj_detector, tracker, frame_q, detection_q, det_vis_q))
-    action_detector_p = Process(target=run_act_detector, args=(act_detector, tf_pointers, detection_q, actions_q))
+    obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
+    action_detector_p = Process(target=run_act_detector, args=(act_detector, shape, tf_pointers, detection_q, actions_q))
     visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q))
 
     processes = [frame_reader_p, obj_detector_p, action_detector_p, visualization_p]
