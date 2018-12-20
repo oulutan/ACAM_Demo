@@ -80,7 +80,7 @@ class Tracker():
         metric = nn_matching.NearestNeighborDistanceMetric(
                 "cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
         #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=3)
-        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=1)
+        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=1)
         #self.results = []
 
     # def add_frame(self, frame):

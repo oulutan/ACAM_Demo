@@ -17,18 +17,45 @@ import time
 DISPLAY = True
 SHOW_CAMS = False
 
+USE_WEBCAM = True
+
 ACTION_FREQ = 8
+OBJ_BATCH_SIZE = 16
+DELAY = 60 # ms
+OBJ_GPU = "0"
+ACT_GPU = "1"
 
 # separate process definitions
 
 # frame reader
 def read_frames(reader, frame_q):
-    for cur_img in reader:
-        frame_q.put(cur_img)
+    if USE_WEBCAM:
+        time.sleep(15)
+        frame_cnt = 0
+        while True:
+            #if frame_cnt % 5 == 0:    
+            #    ret, frame = reader.read()
+            #    cur_img = frame[:,:,::-1]
+            #    frame_q.put(cur_img)
+            #else:
+            #    ret, frame = reader.read()
+            ret, frame = reader.read()
+            cur_img = frame[:,:,::-1]
+            frame_q.put(cur_img)
+            if frame_q.qsize() > 100:
+                time.sleep(1)
+            else:
+                time.sleep(DELAY/1000.)
+            #print(cur_img.shape)
+    else:
+        for cur_img in reader:
+            while frame_q.qsize() > 500: # so that we dont use huge amounts of memory
+                time.sleep(1)
+            frame_q.put(cur_img)
 
 # object detector and tracker
 def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
-    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+    os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
     main_folder = "./"
     ## Best
     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
@@ -36,9 +63,13 @@ def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
     ## Fastest
     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## EVEN FASTER SSD
+    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
+    ## fastestest
+    obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
 
     # NAS
-    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -59,19 +90,72 @@ def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
             act_box = cur_actor['all_boxes'][-1][:]
             act_score = cur_actor['all_scores'][-1]
             actors_snapshot.append({'actor_id':act_id, 'all_boxes':[act_box], 'all_scores':[act_score]})
+        #print(len(actors_snapshot))
+        #if actors_snapshot:
+        #    detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+        #    det_vis_q.put([cur_img, actors_snapshot])
         detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
         det_vis_q.put([cur_img, actors_snapshot])
 
+def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
+    os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
+    main_folder = "./"
+    ## Best
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Good and Faster
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## Fastest
+    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+    ## EVEN FASTER SSD
+    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
+    ## fastestest
+    obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
+
+    # NAS
+    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+
+
+    print("Loading object detection model at %s" % obj_detection_graph)
+
+
+    obj_detector = obj.Object_Detector(obj_detection_graph)
+    tracker = obj.Tracker()
+    while True:
+        img_batch = []
+        for _ in range(OBJ_BATCH_SIZE): 
+            cur_img = frame_q.get()
+            img_batch.append(cur_img)
+        #expanded_img = np.expand_dims(cur_img, axis=0)
+        expanded_img = np.stack(img_batch, axis=0)
+        detection_list = obj_detector.detect_objects_in_np(expanded_img)
+        for ii in range(OBJ_BATCH_SIZE):
+            cur_img = img_batch[ii]
+            detection_info = [info[ii] for info in detection_list]
+            tracker.update_tracker(detection_info, cur_img)
+            rois_np, temporal_rois_np = tracker.generate_all_rois()
+            actors_snapshot = []
+            for cur_actor in tracker.active_actors:
+                act_id = cur_actor['actor_id']
+                act_box = cur_actor['all_boxes'][-1][:]
+                act_score = cur_actor['all_scores'][-1]
+                actors_snapshot.append({'actor_id':act_id, 'all_boxes':[act_box], 'all_scores':[act_score]})
+            #print(len(actors_snapshot))
+            #if actors_snapshot:
+            #    detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+            #    det_vis_q.put([cur_img, actors_snapshot])
+            detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+            det_vis_q.put([cur_img, actors_snapshot])
 
 # Action detector
 def run_act_detector(shape, detection_q, actions_q):
-    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+    os.environ['CUDA_VISIBLE_DEVICES'] = ACT_GPU
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn')
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+    #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_ava-71'
     main_folder = "./"
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
@@ -90,8 +174,10 @@ def run_act_detector(shape, detection_q, actions_q):
         for _ in range(ACTION_FREQ):
             cur_img, active_actors, rois_np, temporal_rois_np = detection_q.get()
             images.append(cur_img)
+            #print("action frame: %i" % len(images))
         
         if not active_actors:
+            actions_q.put({})
             continue
         # use the last active actors and rois vectors
         no_actors = len(active_actors)
@@ -130,6 +216,7 @@ def run_act_detector(shape, detection_q, actions_q):
             prob_dict[cur_actor_id] = cur_results
         
         actions_q.put(prob_dict)
+        #print(prob_dict.keys())
 
 
 
@@ -138,19 +225,35 @@ def run_visualization(writer, det_vis_q, actions_q):
     frame_cnt = 0
     prob_dict = actions_q.get() # skip the first one
 
+    durations = []
+    fps_message = "FPS: 0"
     while True:
+        start_time = time.time()
         frame_cnt += 1
         cur_img, active_actors = det_vis_q.get()
+        #print(len(active_actors))
         if frame_cnt % ACTION_FREQ == 0:
             prob_dict = actions_q.get()
 
         out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
+        
+        cv2.putText(out_img, fps_message, (25, 25), 0, 1, (255,0,0), 1)
     
         if DISPLAY: 
             cv2.imshow('results', out_img[:,:,::-1])
-            cv2.waitKey(10)
-        else:
-            writer.append_data(out_img)
+            cv2.waitKey(DELAY//2)
+            #cv2.waitKey(1)
+        #else:
+        writer.append_data(out_img)
+        
+        # FPS info
+        end_time = time.time()
+        duration = end_time - start_time
+        durations.append(duration)
+        if len(durations) > 64: del durations[0]
+        if frame_cnt % 16 == 0 :
+            print("avg time per frame: %.3f" % np.mean(durations))
+            fps_message = "FPS: %i" % int(1 / np.mean(durations))
 
 
 def main():
@@ -173,16 +276,28 @@ def main():
     main_folder = './'
     
 
-    print("Reading video file %s" % video_path)
-    reader = imageio.get_reader(video_path, 'ffmpeg')
+    if USE_WEBCAM:
+        print("Using webcam")
+        reader = cv2.VideoCapture(0)
+        ret, frame = reader.read()
+        if ret:
+            H,W,C = frame.shape
+        else:
+            H = 480
+            W = 640
+    else:
+        print("Reading video file %s" % video_path)
+        reader = imageio.get_reader(video_path, 'ffmpeg')
+        fps = reader.get_meta_data()['fps'] #// fps_divider
+        W, H = reader.get_meta_data()['size']
+        #T = tracker.timesteps
+    T = 32
     
     # fps_divider = 1
     print('Running actions every %i frame' % ACTION_FREQ)
-    fps = reader.get_meta_data()['fps'] #// fps_divider
-    W, H = reader.get_meta_data()['size']
-    #T = tracker.timesteps
-    T = 32
-    if not DISPLAY:
+    #if not DISPLAY:
+    if True:
+        fps = 1000//DELAY
         writer = imageio.get_writer(out_vid_path, fps=fps)
         print("Writing output to %s" % out_vid_path)
     else:
@@ -198,7 +313,8 @@ def main():
     actions_q = Queue()
 
     frame_reader_p = Process(target=read_frames, args=(reader, frame_q))
-    obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
+    #obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
+    obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q))
     action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q))
     visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q))
 
@@ -208,16 +324,21 @@ def main():
         process.daemon = True
         process.start()
 
-    while True:
-        time.sleep(1)
-    
-        
-    if not DISPLAY:
+    try:
+        while True:
+            time.sleep(1)
+            print("frame_q: %i, obj_q: %i, act_q: %i, vis_q: %i" % (frame_q.qsize(), detection_q.qsize(), actions_q.qsize(), det_vis_q.qsize()))
+    except KeyboardInterrupt:
+        if USE_WEBCAM:
+            reader.release()
+
+    #if not DISPLAY:
+    if True:
         writer.close()
 
 
 np.random.seed(10)
-COLORS = np.random.randint(0, 255, [1000, 3])
+COLORS = np.random.randint(0, 100, [1000, 3]) # get darker colors for bboxes
 def visualize_detection_results(img_np, active_actors, prob_dict):
     score_th = 0.30
     action_th = 0.20
@@ -249,7 +370,7 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         # label = 'Class_%i' % cur_class
         label = obj.OBJECT_STRINGS[cur_class]['name']
         message = '%s_%i: %% %.2f' % (label, actor_id,conf)
-        action_message_list = ["%s:%.3f" % (actres[0][0:7], actres[1]) for actres in cur_act_results if actres[1]>action_th]
+        action_message_list = ["%s:%.3f" % (actres[0][:20], actres[1]) for actres in cur_act_results if actres[1]>action_th]
         # action_message = " ".join(action_message_list)
 
         color = COLORS[actor_id]
@@ -258,13 +379,15 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
 
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
         cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
-        cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
+        #cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
+        cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255), 1)
 
         #action message writing
         cv2.rectangle(disp_img, (left, top), (right,top+10*len(action_message_list)), color, -1)
         for aa, action_message in enumerate(action_message_list):
             offset = aa*10
-            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
+            #cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
+            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255), 1)
 
     return disp_img
 
