@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import imageio
-import tensorflow as tf
+#import tensorflow as tf
 import json
 
 import os
@@ -23,7 +23,7 @@ ACTION_FREQ = 8
 OBJ_BATCH_SIZE = 16
 DELAY = 60 # ms
 OBJ_GPU = "0"
-ACT_GPU = "1"
+ACT_GPU = "0"
 
 # separate process definitions
 
@@ -55,6 +55,7 @@ def read_frames(reader, frame_q):
 
 # object detector and tracker
 def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
+    import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
     os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
     main_folder = "./"
     ## Best
@@ -98,6 +99,7 @@ def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
         det_vis_q.put([cur_img, actors_snapshot])
 
 def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
+    import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
     os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
     main_folder = "./"
     ## Best
@@ -148,6 +150,7 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
 
 # Action detector
 def run_act_detector(shape, detection_q, actions_q):
+    import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
     os.environ['CUDA_VISIBLE_DEVICES'] = ACT_GPU
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
@@ -338,7 +341,7 @@ def main():
 
 
 np.random.seed(10)
-COLORS = np.random.randint(0, 100, [1000, 3]) # get darker colors for bboxes
+COLORS = np.random.randint(0, 100, [1000, 3]) # get darker colors for bboxes and use white text
 def visualize_detection_results(img_np, active_actors, prob_dict):
     score_th = 0.30
     action_th = 0.20
