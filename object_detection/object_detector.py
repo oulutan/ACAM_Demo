@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import cv2
+# import cv2
 
 class Object_Detector():
     def __init__(self, graph_path, session=None):

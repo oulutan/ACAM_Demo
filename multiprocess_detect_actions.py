@@ -53,50 +53,50 @@ def read_frames(reader, frame_q):
                 time.sleep(1)
             frame_q.put(cur_img)
 
-# object detector and tracker
-def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
-    import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
-    os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
-    main_folder = "./"
-    ## Best
-    # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Good and Faster
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Fastest
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## EVEN FASTER SSD
-    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
-    ## fastestest
-    obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
+# # object detector and tracker
+# def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
+#     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
+#     os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
+#     main_folder = "./"
+#     ## Best
+#     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+#     ## Good and Faster
+#     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+#     ## Fastest
+#     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
+#     ## EVEN FASTER SSD
+#     #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
+#     ## fastestest
+#     obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
 
-    # NAS
-    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
-
-
-    print("Loading object detection model at %s" % obj_detection_graph)
+#     # NAS
+#     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
-    obj_detector = obj.Object_Detector(obj_detection_graph)
-    tracker = obj.Tracker()
-    while True:
-        cur_img = frame_q.get()
-        expanded_img = np.expand_dims(cur_img, axis=0)
-        detection_list = obj_detector.detect_objects_in_np(expanded_img)
-        detection_info = [info[0] for info in detection_list]
-        tracker.update_tracker(detection_info, cur_img)
-        rois_np, temporal_rois_np = tracker.generate_all_rois()
-        actors_snapshot = []
-        for cur_actor in tracker.active_actors:
-            act_id = cur_actor['actor_id']
-            act_box = cur_actor['all_boxes'][-1][:]
-            act_score = cur_actor['all_scores'][-1]
-            actors_snapshot.append({'actor_id':act_id, 'all_boxes':[act_box], 'all_scores':[act_score]})
-        #print(len(actors_snapshot))
-        #if actors_snapshot:
-        #    detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
-        #    det_vis_q.put([cur_img, actors_snapshot])
-        detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
-        det_vis_q.put([cur_img, actors_snapshot])
+#     print("Loading object detection model at %s" % obj_detection_graph)
+
+
+#     obj_detector = obj.Object_Detector(obj_detection_graph)
+#     tracker = obj.Tracker()
+#     while True:
+#         cur_img = frame_q.get()
+#         expanded_img = np.expand_dims(cur_img, axis=0)
+#         detection_list = obj_detector.detect_objects_in_np(expanded_img)
+#         detection_info = [info[0] for info in detection_list]
+#         tracker.update_tracker(detection_info, cur_img)
+#         rois_np, temporal_rois_np = tracker.generate_all_rois()
+#         actors_snapshot = []
+#         for cur_actor in tracker.active_actors:
+#             act_id = cur_actor['actor_id']
+#             act_box = cur_actor['all_boxes'][-1][:]
+#             act_score = cur_actor['all_scores'][-1]
+#             actors_snapshot.append({'actor_id':act_id, 'all_boxes':[act_box], 'all_scores':[act_score]})
+#         #print(len(actors_snapshot))
+#         #if actors_snapshot:
+#         #    detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+#         #    det_vis_q.put([cur_img, actors_snapshot])
+#         detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
+#         det_vis_q.put([cur_img, actors_snapshot])
 
 def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
@@ -176,6 +176,7 @@ def run_act_detector(shape, detection_q, actions_q):
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
     act_detector.restore_model(ckpt_path)
 
+    processed_frames_cnt = 0
 
     while True:
         images = []
@@ -185,45 +186,51 @@ def run_act_detector(shape, detection_q, actions_q):
             #print("action frame: %i" % len(images))
         
         if not active_actors:
-            actions_q.put({})
-            continue
-        # use the last active actors and rois vectors
-        no_actors = len(active_actors)
+            prob_dict = {}
+        else:
+            # use the last active actors and rois vectors
+            no_actors = len(active_actors)
 
-        cur_input_sequence = np.expand_dims(np.stack(images, axis=0), axis=0)
+            cur_input_sequence = np.expand_dims(np.stack(images, axis=0), axis=0)
 
-        if no_actors > 14:
-            no_actors = 14
-            rois_np = rois_np[:14]
-            temporal_rois_np = temporal_rois_np[:14]
-            active_actors = active_actors[:14]
+            if no_actors > 14:
+                no_actors = 14
+                rois_np = rois_np[:14]
+                temporal_rois_np = temporal_rois_np[:14]
+                active_actors = active_actors[:14]
 
-        #feed_dict = {input_frames:cur_input_sequence, 
-        feed_dict = {updated_frames:cur_input_sequence, # only update last #action_freq frames
-                        temporal_rois: temporal_rois_np,
-                        temporal_roi_batch_indices: np.zeros(no_actors),
-                        rois:rois_np, 
-                        roi_batch_indices:np.arange(no_actors)}
-        run_dict = {'pred_probs': pred_probs}
+            #feed_dict = {input_frames:cur_input_sequence, 
+            feed_dict = {updated_frames:cur_input_sequence, # only update last #action_freq frames
+                            temporal_rois: temporal_rois_np,
+                            temporal_roi_batch_indices: np.zeros(no_actors),
+                            rois:rois_np, 
+                            roi_batch_indices:np.arange(no_actors)}
+            run_dict = {'pred_probs': pred_probs}
 
-        out_dict = act_detector.session.run(run_dict, feed_dict=feed_dict)
-        probs = out_dict['pred_probs']
+            out_dict = act_detector.session.run(run_dict, feed_dict=feed_dict)
+            probs = out_dict['pred_probs']
 
-        # associate probs with actor ids
-        print_top_k = 5
-        prob_dict = {}
-        for bb in range(no_actors):
-            act_probs = probs[bb]
-            order = np.argsort(act_probs)[::-1]
-            cur_actor_id = active_actors[bb]['actor_id']
-            print("Person %i" % cur_actor_id)
-            cur_results = []
-            for pp in range(print_top_k):
-                print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
-                cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
-            prob_dict[cur_actor_id] = cur_results
+            # associate probs with actor ids
+            print_top_k = 5
+            prob_dict = {}
+            for bb in range(no_actors):
+                act_probs = probs[bb]
+                order = np.argsort(act_probs)[::-1]
+                cur_actor_id = active_actors[bb]['actor_id']
+                print("Person %i" % cur_actor_id)
+                cur_results = []
+                for pp in range(print_top_k):
+                    print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+                    cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+                prob_dict[cur_actor_id] = cur_results
+            
+        processed_frames_cnt += ACTION_FREQ # each turn we process this many frames
         
-        actions_q.put(prob_dict)
+        if processed_frames_cnt > act_detector.timesteps / 2:
+            # we are doing this so we can skip the initialization period
+            # first frame needs timesteps / 2 frames to be processed before visualizing
+            actions_q.put(prob_dict)
+        
         #print(prob_dict.keys())
 
 
@@ -231,7 +238,7 @@ def run_act_detector(shape, detection_q, actions_q):
 # Visualization
 def run_visualization(writer, det_vis_q, actions_q):
     frame_cnt = 0
-    prob_dict = actions_q.get() # skip the first one
+    # prob_dict = actions_q.get() # skip the first one
 
     durations = []
     fps_message = "FPS: 0"
