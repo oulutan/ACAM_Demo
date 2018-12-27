@@ -190,6 +190,7 @@ def run_act_detector(shape, detection_q, actions_q):
         else:
             # use the last active actors and rois vectors
             no_actors = len(active_actors)
+            print("ACTIVE ACTORS: %i" % no_actors)
 
             cur_input_sequence = np.expand_dims(np.stack(images, axis=0), axis=0)
 
@@ -226,7 +227,7 @@ def run_act_detector(shape, detection_q, actions_q):
             
         processed_frames_cnt += ACTION_FREQ # each turn we process this many frames
         
-        if processed_frames_cnt > act_detector.timesteps / 2:
+        if processed_frames_cnt >= act_detector.timesteps / 2:
             # we are doing this so we can skip the initialization period
             # first frame needs timesteps / 2 frames to be processed before visualizing
             actions_q.put(prob_dict)
@@ -244,7 +245,6 @@ def run_visualization(writer, det_vis_q, actions_q):
     fps_message = "FPS: 0"
     while True:
         start_time = time.time()
-        frame_cnt += 1
         cur_img, active_actors = det_vis_q.get()
         #print(len(active_actors))
         if frame_cnt % ACTION_FREQ == 0:
@@ -260,6 +260,7 @@ def run_visualization(writer, det_vis_q, actions_q):
             #cv2.waitKey(1)
         #else:
         writer.append_data(out_img)
+        frame_cnt += 1
         
         # FPS info
         end_time = time.time()
