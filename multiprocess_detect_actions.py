@@ -111,7 +111,9 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     ## EVEN FASTER SSD
     #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
     ## fastestest
-    obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
+    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
+
+    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
 
     # NAS
     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
@@ -129,7 +131,10 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
             img_batch.append(cur_img)
         #expanded_img = np.expand_dims(cur_img, axis=0)
         expanded_img = np.stack(img_batch, axis=0)
+        start_time = time.time()
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
+        end_time = time.time()
+        print("%.3f second per image" % ((end_time-start_time) / float(OBJ_BATCH_SIZE)) )
         for ii in range(OBJ_BATCH_SIZE):
             cur_img = img_batch[ii]
             detection_info = [info[ii] for info in detection_list]
@@ -282,6 +287,8 @@ def main():
     if USE_WEBCAM:
         print("Using webcam")
         reader = cv2.VideoCapture(0)
+        #reader.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        #reader.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         ret, frame = reader.read()
         if ret:
             H,W,C = frame.shape
@@ -294,6 +301,7 @@ def main():
         fps = reader.get_meta_data()['fps'] #// fps_divider
         W, H = reader.get_meta_data()['size']
         #T = tracker.timesteps
+    print("H: %i, W: %i" % (H, W))
     T = 32
     
     # fps_divider = 1
