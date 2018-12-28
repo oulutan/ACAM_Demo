@@ -15,14 +15,15 @@ from multiprocessing import Process, Queue
 
 import time
 #DISPLAY = True
+#SHOW_CAMS = True
 SHOW_CAMS = False
 
 #USE_WEBCAM = True
 
 ACTION_FREQ = 8
-OBJ_BATCH_SIZE = 8
+OBJ_BATCH_SIZE = 16
 DELAY = 60 # ms
-OBJ_GPU = "1"
+OBJ_GPU = "0"
 ACT_GPU = "0"
 
 # separate process definitions
@@ -113,8 +114,8 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     ## fastestest
     #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
 
-    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
+    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
     # NAS
     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
@@ -164,7 +165,7 @@ def run_act_detector(shape, detection_q, actions_q):
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_ava-71'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-128'
     main_folder = "./"
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
@@ -233,7 +234,8 @@ def run_act_detector(shape, detection_q, actions_q):
                         cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
                     prob_dict[cur_actor_id] = cur_results
             else:
-                prob_dict = out_dict
+                # prob_dict = out_dict
+                prob_dict = {"cams": visualize_cams(out_dict)} # do it here so it doesnt slow down visualization process
             
         processed_frames_cnt += ACTION_FREQ # each turn we process this many frames
         
@@ -263,7 +265,13 @@ def run_visualization(writer, det_vis_q, actions_q, display):
         if not SHOW_CAMS:
             out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
         else:
-            out_img = visualize_cams(cur_img, prob_dict)
+            # out_img = visualize_cams(cur_img, prob_dict)
+            img_to_concat = prob_dict["cams"] if "cams" in prob_dict else np.zeros((400, 400, 3), np.uint8)
+            image = cur_img
+            img_new_height = 400
+            img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
+            img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
+            out_img = np.array(np.concatenate([img_to_show, img_to_concat], axis=1)[:,:,::-1])
         
     
         if display: 
@@ -433,59 +441,61 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
     return disp_img
 
 
-def visualize_cams(image, out_dict):#, actor_idx):
-    #classes = ["walk", "bend", "carry"]
-    #classes = ["sit", "ride"]
-    actor_idx = 0
-    classes = ["talk to", "answer phone", "drink"]
-    action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
-
-    feature_activations = out_dict['final_i3d_feats']
-    cls_weights = out_dict['cls_weights']
-    input_frames = out_dict['cropped_frames'].astype(np.uint8)
-    probs = out_dict["pred_probs"]
-
-    class_maps = np.matmul(feature_activations, cls_weights)
-    min_val = np.min(class_maps[:,:, :, :, :])
-    max_val = np.max(class_maps[:,:, :, :, :]) - min_val
-
-    normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
-
-    t_feats = feature_activations.shape[1]
-    t_input = input_frames.shape[1]
-    index_diff = (t_input) // (t_feats+1)
-
-    img_new_height = 400
-    img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
-    img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
-    #img_to_concat = np.zeros((400, 800, 3), np.uint8)
+#def visualize_cams(image, out_dict):#, actor_idx):
+def visualize_cams(out_dict):#, actor_idx):
+    # img_new_height = 400
+    # img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
+    # img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
+    ##img_to_concat = np.zeros((400, 800, 3), np.uint8)
     img_to_concat = np.zeros((400, 400, 3), np.uint8)
-    for cc in range(len(action_classes)):
-        cur_cls_idx = action_classes[cc]
-        act_str = act.ACTION_STRINGS[action_classes[cc]]
-        message = "%s:%%%.2d" % (act_str[:20], 100*probs[actor_idx, cur_cls_idx])
-        for tt in range(t_feats):
-            cur_cam = normalized_cmaps[actor_idx, tt,:,:, cur_cls_idx]
-            cur_frame = input_frames[actor_idx, (tt+1) * index_diff, :,:,::-1]
 
-            resized_cam = cv2.resize(cur_cam, (100,100))
-            colored_cam = cv2.applyColorMap(resized_cam, cv2.COLORMAP_JET)
+    if out_dict:
+        #classes = ["walk", "bend", "carry"]
+        #classes = ["sit", "ride"]
+        actor_idx = 0
+        #classes = ["walk", "drink", "bend"]
+        #classes = ["point to", "work", "text on"]
+        #classes = ["stand", "answer phone", "carry"]
+        #classes = ["carry/hold", "close", "open"]
+        classes = ["hand clap", "drink", "talk"]
+        action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
 
-            overlay = cv2.resize(cur_frame.copy(), (100,100))
-            overlay = cv2.addWeighted(overlay, 0.5, colored_cam, 0.5, 0)
+        feature_activations = out_dict['final_i3d_feats']
+        cls_weights = out_dict['cls_weights']
+        input_frames = out_dict['cropped_frames'].astype(np.uint8)
+        probs = out_dict["pred_probs"]
 
-            img_to_concat[cc*125:cc*125+100, tt*100:(tt+1)*100, :] = overlay
-        cv2.putText(img_to_concat, message, (20, 13+100+125*cc), 0, 0.5, (255,255,255), 1)
+        class_maps = np.matmul(feature_activations, cls_weights)
+        min_val = np.min(class_maps[:,:, :, :, :])
+        max_val = np.max(class_maps[:,:, :, :, :]) - min_val
 
-    final_image = np.concatenate([img_to_show, img_to_concat], axis=1)
-    return final_image[:,:,::-1]
+        normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
 
+        t_feats = feature_activations.shape[1]
+        t_input = input_frames.shape[1]
+        index_diff = (t_input) // (t_feats+1)
 
+        for cc in range(len(action_classes)):
+            cur_cls_idx = action_classes[cc]
+            act_str = act.ACTION_STRINGS[action_classes[cc]]
+            message = "%s:%%%.2d" % (act_str[:20], 100*probs[actor_idx, cur_cls_idx])
+            for tt in range(t_feats):
+                cur_cam = normalized_cmaps[actor_idx, tt,:,:, cur_cls_idx]
+                cur_frame = input_frames[actor_idx, (tt+1) * index_diff, :,:,::-1]
 
+                resized_cam = cv2.resize(cur_cam, (100,100))
+                colored_cam = cv2.applyColorMap(resized_cam, cv2.COLORMAP_JET)
 
+                overlay = cv2.resize(cur_frame.copy(), (100,100))
+                overlay = cv2.addWeighted(overlay, 0.5, colored_cam, 0.5, 0)
 
+                img_to_concat[cc*125:cc*125+100, tt*100:(tt+1)*100, :] = overlay
+            cv2.putText(img_to_concat, message, (20, 13+100+125*cc), 0, 0.5, (255,255,255), 1)
 
-    
+    return img_to_concat
+    #final_image = np.concatenate([img_to_show, img_to_concat], axis=1)
+    #return np.array(final_image[:,:,::-1])
+    #return final_image
 
 
 if __name__ == '__main__':
