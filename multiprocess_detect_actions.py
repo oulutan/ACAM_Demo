@@ -208,22 +208,32 @@ def run_act_detector(shape, detection_q, actions_q):
                             roi_batch_indices:np.arange(no_actors)}
             run_dict = {'pred_probs': pred_probs}
 
+            if SHOW_CAMS:
+                run_dict['cropped_frames'] = cropped_frames
+                #import pdb;pdb.set_trace()
+                run_dict['final_i3d_feats'] =  act_detector.act_graph.get_collection('final_i3d_feats')[0]
+                #run_dict['cls_weights'] = [var for var in tf.global_variables() if var.name == "CLS_Logits/kernel:0"][0]
+                run_dict['cls_weights'] = act_detector.act_graph.get_collection('variables')[-2] # this is the kernel
+
             out_dict = act_detector.session.run(run_dict, feed_dict=feed_dict)
             probs = out_dict['pred_probs']
 
-            # associate probs with actor ids
-            print_top_k = 5
-            prob_dict = {}
-            for bb in range(no_actors):
-                act_probs = probs[bb]
-                order = np.argsort(act_probs)[::-1]
-                cur_actor_id = active_actors[bb]['actor_id']
-                print("Person %i" % cur_actor_id)
-                cur_results = []
-                for pp in range(print_top_k):
-                    print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
-                    cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
-                prob_dict[cur_actor_id] = cur_results
+            if not SHOW_CAMS:
+                # associate probs with actor ids
+                print_top_k = 5
+                prob_dict = {}
+                for bb in range(no_actors):
+                    act_probs = probs[bb]
+                    order = np.argsort(act_probs)[::-1]
+                    cur_actor_id = active_actors[bb]['actor_id']
+                    print("Person %i" % cur_actor_id)
+                    cur_results = []
+                    for pp in range(print_top_k):
+                        print('\t %s: %.3f' % (act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+                        cur_results.append((act.ACTION_STRINGS[order[pp]], act_probs[order[pp]]))
+                    prob_dict[cur_actor_id] = cur_results
+            else:
+                prob_dict = out_dict
             
         processed_frames_cnt += ACTION_FREQ # each turn we process this many frames
         
@@ -250,7 +260,10 @@ def run_visualization(writer, det_vis_q, actions_q, display):
         if frame_cnt % ACTION_FREQ == 0:
             prob_dict = actions_q.get()
 
-        out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
+        if not SHOW_CAMS:
+            out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
+        else:
+            out_img = visualize_cams(cur_img, prob_dict)
         
     
         if display: 
@@ -420,10 +433,11 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
     return disp_img
 
 
-def visualize_cams(image, input_frames, out_dict, actor_idx):
+def visualize_cams(image, out_dict):#, actor_idx):
     #classes = ["walk", "bend", "carry"]
     #classes = ["sit", "ride"]
-    classes = ["talk to", "watch (a", "listen to"]
+    actor_idx = 0
+    classes = ["talk to", "answer phone", "drink"]
     action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
 
     feature_activations = out_dict['final_i3d_feats']
