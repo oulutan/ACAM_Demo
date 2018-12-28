@@ -14,22 +14,22 @@ import action_detection.action_detector as act
 from multiprocessing import Process, Queue
 
 import time
-DISPLAY = True
+#DISPLAY = True
 SHOW_CAMS = False
 
-USE_WEBCAM = True
+#USE_WEBCAM = True
 
 ACTION_FREQ = 8
-OBJ_BATCH_SIZE = 16
+OBJ_BATCH_SIZE = 8
 DELAY = 60 # ms
-OBJ_GPU = "0"
+OBJ_GPU = "1"
 ACT_GPU = "0"
 
 # separate process definitions
 
 # frame reader
-def read_frames(reader, frame_q):
-    if USE_WEBCAM:
+def read_frames(reader, frame_q, use_webcam):
+    if use_webcam:
         time.sleep(15)
         frame_cnt = 0
         while True:
@@ -40,7 +40,7 @@ def read_frames(reader, frame_q):
             #else:
             #    ret, frame = reader.read()
             ret, frame = reader.read()
-            cur_img = frame[:,:,::-1]
+            cur_img = frame[:,:,::-1] # bgr to rgb from opencv reader
             frame_q.put(cur_img)
             if frame_q.qsize() > 100:
                 time.sleep(1)
@@ -48,7 +48,7 @@ def read_frames(reader, frame_q):
                 time.sleep(DELAY/1000.)
             #print(cur_img.shape)
     else:
-        for cur_img in reader:
+        for cur_img in reader: # this is imageio reader, it uses rgb
             while frame_q.qsize() > 500: # so that we dont use huge amounts of memory
                 time.sleep(1)
             frame_q.put(cur_img)
@@ -113,7 +113,8 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     ## fastestest
     #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
 
-    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
     # NAS
     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
@@ -190,7 +191,6 @@ def run_act_detector(shape, detection_q, actions_q):
         else:
             # use the last active actors and rois vectors
             no_actors = len(active_actors)
-            print("ACTIVE ACTORS: %i" % no_actors)
 
             cur_input_sequence = np.expand_dims(np.stack(images, axis=0), axis=0)
 
@@ -237,7 +237,7 @@ def run_act_detector(shape, detection_q, actions_q):
 
 
 # Visualization
-def run_visualization(writer, det_vis_q, actions_q):
+def run_visualization(writer, det_vis_q, actions_q, display):
     frame_cnt = 0
     # prob_dict = actions_q.get() # skip the first one
 
@@ -252,9 +252,9 @@ def run_visualization(writer, det_vis_q, actions_q):
 
         out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
         
-        cv2.putText(out_img, fps_message, (25, 25), 0, 1, (255,0,0), 1)
     
-        if DISPLAY: 
+        if display: 
+            cv2.putText(out_img, fps_message, (25, 25), 0, 1, (255,0,0), 1)
             cv2.imshow('results', out_img[:,:,::-1])
             cv2.waitKey(DELAY//2)
             #cv2.waitKey(1)
@@ -266,7 +266,7 @@ def run_visualization(writer, det_vis_q, actions_q):
         end_time = time.time()
         duration = end_time - start_time
         durations.append(duration)
-        if len(durations) > 64: del durations[0]
+        if len(durations) > 32: del durations[0]
         if frame_cnt % 16 == 0 :
             print("avg time per frame: %.3f" % np.mean(durations))
             fps_message = "FPS: %i" % int(1 / np.mean(durations))
@@ -275,16 +275,21 @@ def run_visualization(writer, det_vis_q, actions_q):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-v', '--video_path', type=str, required=True)
+    parser.add_argument('-v', '--video_path', type=str, required=False, default="")
+    parser.add_argument('-d', '--display', type=str, required=False, default="True")
 
     args = parser.parse_args()
+    use_webcam = args.video_path == ""
+    display = (args.display == "True" or args.display == "true")
     
-    actor_to_display = 6 # for cams
+    #actor_to_display = 6 # for cams
 
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
+    
     #out_vid_path = "./output_videos/%s_output.mp4" % (basename if not SHOW_CAMS else basename+'_cams_actor_%.2d' % actor_to_display)
-    out_vid_path = './output_videos/testing.mp4'
+    out_vid_path = "./output_videos/%s_output.mp4" % basename 
+    out_vid_path = out_vid_path if not use_webcam else './output_videos/webcam_output.mp4' 
 
     # video_path = "./tests/chase1Person1View3Point0.mp4"
     # out_vid_path = 'output.mp4'
@@ -292,7 +297,7 @@ def main():
     main_folder = './'
     
 
-    if USE_WEBCAM:
+    if use_webcam:
         print("Using webcam")
         reader = cv2.VideoCapture(0)
         #reader.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -303,6 +308,7 @@ def main():
         else:
             H = 480
             W = 640
+        fps = 1000//DELAY
     else:
         print("Reading video file %s" % video_path)
         reader = imageio.get_reader(video_path, 'ffmpeg')
@@ -314,14 +320,9 @@ def main():
     
     # fps_divider = 1
     print('Running actions every %i frame' % ACTION_FREQ)
-    #if not DISPLAY:
-    if True:
-        fps = 1000//DELAY
-        writer = imageio.get_writer(out_vid_path, fps=fps)
-        print("Writing output to %s" % out_vid_path)
-    else:
-        writer = None
 
+    writer = imageio.get_writer(out_vid_path, fps=fps)
+    print("Writing output to %s" % out_vid_path)
     shape = [T,H,W,3]
 
     
@@ -331,11 +332,11 @@ def main():
     det_vis_q = Queue()
     actions_q = Queue()
 
-    frame_reader_p = Process(target=read_frames, args=(reader, frame_q))
+    frame_reader_p = Process(target=read_frames, args=(reader, frame_q, use_webcam))
     #obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
     obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q))
     action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q))
-    visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q))
+    visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q, display))
 
     processes = [frame_reader_p, obj_detector_p, action_detector_p, visualization_p]
 
@@ -344,16 +345,24 @@ def main():
         process.start()
 
     try:
-        while True:
-            time.sleep(1)
-            print("frame_q: %i, obj_q: %i, act_q: %i, vis_q: %i" % (frame_q.qsize(), detection_q.qsize(), actions_q.qsize(), det_vis_q.qsize()))
+        if use_webcam:
+            while True:
+                time.sleep(1)
+                print("frame_q: %i, obj_q: %i, act_q: %i, vis_q: %i" % (frame_q.qsize(), detection_q.qsize(), actions_q.qsize(), det_vis_q.qsize()))
+        else:
+            time.sleep(5)
+            while True:
+                time.sleep(1)
+                print("frame_q: %i, obj_q: %i, act_q: %i, vis_q: %i" % (frame_q.qsize(), detection_q.qsize(), actions_q.qsize(), det_vis_q.qsize()))
+                if frame_q.qsize() == 0 and detection_q.qsize() == 0 and actions_q.qsize() == 0: # if all the queues are empty, we are done
+                    writer.close()
+                    break
     except KeyboardInterrupt:
-        if USE_WEBCAM:
-            reader.release()
-
-    #if not DISPLAY:
-    if True:
         writer.close()
+        if use_webcam:
+            reader.release()
+    print("Done!")
+
 
 
 np.random.seed(10)
