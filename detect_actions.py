@@ -17,11 +17,13 @@ SHOW_CAMS = False
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-v', '--video_path', type=str, required=True)
+    parser.add_argument('-v', '--video_path', type=str, required=False, default="")
+    parser.add_argument('-d', '--display', type=str, required=False, default="True")
 
     args = parser.parse_args()
+    display = (args.display == "True" or args.display == "true")
     
-    actor_to_display = 6 # for cams
+    #actor_to_display = 6 # for cams
 
     video_path = args.video_path
     basename = os.path.basename(video_path).split('.')[0]
@@ -60,7 +62,7 @@ def main():
     fps = reader.get_meta_data()['fps'] #// fps_divider
     W, H = reader.get_meta_data()['size']
     T = tracker.timesteps
-    if not DISPLAY:
+    if not display:
         writer = imageio.get_writer(out_vid_path, fps=fps)
         print("Writing output to %s" % out_vid_path)
 
@@ -185,13 +187,13 @@ def main():
                         continue
                 else:
                     continue
-            if DISPLAY: 
+            if display: 
                 cv2.imshow('results', out_img[:,:,::-1])
                 cv2.waitKey(10)
             else:
                 writer.append_data(out_img)
         
-    if not DISPLAY:
+    if not display:
         writer.close()
 
 
