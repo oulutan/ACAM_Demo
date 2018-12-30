@@ -1,4 +1,4 @@
-# Conditional_Attention_Maps_Demo
+# Actor Conditioned Attention Maps Demo
 
 This repo contains the demo code for our action recognition model explained in ARXIV LINK. 
 
