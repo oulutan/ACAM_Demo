@@ -28,9 +28,23 @@ git clone --recursive https://github.com/oulutan/ACAM_Demo
 
 2. Compile Tensorflow Object Detection API within object_detection/models following https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md
 
+It should be just the protoc compilation like the following: 
+```bash
+# From tensorflow/models/research/
+protoc object_detection/protos/*.proto --python_out=.
+```
+If you are getting errors you have to download the required protoc and run that
+```bash
+# From tensorflow/models/research/
+wget -O protobuf.zip https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-linux-x86_64.zip
+unzip protobuf.zip
+./bin/protoc object_detection/protos/*.proto --python_out=.
+```
+
+
 3. Make sure the object detection requirements are within PYTHONPATH. I have an easy script for this. 
 ```bash
-# within /object_detection
+# From object_detection/
 source SET_ENVIRONMENT.sh
 ```
 
