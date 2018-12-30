@@ -67,13 +67,13 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker as ds_Tracker
 MODEL_CKPT = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/deep_sort/weights/mars-small128.pb"
 class Tracker():
-    def __init__(self):
+    def __init__(self, timesteps=32):
         self.active_actors = []
         self.inactive_actors = []
         self.actor_no = 0
         self.frame_history = []
         self.frame_no = 0
-        self.timesteps = 32
+        self.timesteps = timesteps
         self.actor_infos = {}
         # deep sort
         self.encoder = create_box_encoder(MODEL_CKPT, batch_size=16)

@@ -4,14 +4,14 @@ import numpy as np
 import action_detection.i3d as i3d
 
 class Action_Detector():
-    def __init__(self, model_arc, session=None):
+    def __init__(self, model_arc, timesteps=32, session=None):
         self.architecture_str = model_arc
         
 
         self.is_training = tf.constant(False)
         self.num_classes = 60
         self.input_size = [400,400]
-        self.timesteps = 32
+        self.timesteps = timesteps
         self.max_rois = 1
         self.act_graph = tf.Graph()
 
