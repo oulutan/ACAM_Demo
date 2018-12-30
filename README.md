@@ -42,7 +42,7 @@ unzip protobuf.zip
 ```
 
 
-3. Make sure the object detection requirements are within PYTHONPATH. I have an easy script for this. 
+3. Make sure the object detection API and Deepsort are within PYTHONPATH. I have an easy script for this. 
 ```bash
 # From object_detection/
 source SET_ENVIRONMENT.sh
