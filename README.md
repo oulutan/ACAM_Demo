@@ -2,7 +2,7 @@
 
 This repo contains the demo code for our action recognition model explained in ARXIV LINK. 
 
-This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps .
+This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps .(Currently private repo)
 
 The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at 
 https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh 
@@ -76,4 +76,10 @@ Object detection and Action detection can use different GPUs for faster performa
 
 # How is real-time performance achieved?
 
-1. Object Detector batched processing. Instead of running the object detector on each frame separately, performance was improved by batching multiple frames together. 
+1. Multiprocessing. Each module in the pipeline (Video input, Object detection/tracking, Action Detection and Video output) runs separately on different processes. Additional performance can be achieved by using separate gpus. 
+
+2. Object Detector batched processing. Instead of running the object detector on each frame separately, performance was improved by batching multiple frames together. 
+
+3. Input to the action detector is 32 frames and we have %75 overlap between there intervals. This means that every time we run action detectors, we only see 8 new frames. Uploading 32 frames to the gpu is a slow process without pre-fetching. Because of that, in this model, we keep the remaining 24 frames on the GPU as a tf.variable while updating the new 8, like a queue.
+
+4. SSD-MobileNetV2 is a fast detector. Additionally, the input webcam frame is limited to 640x480 resolution.
