@@ -48,3 +48,13 @@ unzip protobuf.zip
 source SET_ENVIRONMENT.sh
 ```
 
+4. Download Tensorflow Object Detection models into object_detection/weights/ from: 
+https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
+
+16 Fps from webcam was achieved by 
+http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz
+
+5. Download DeepSort re-id model into object_detection/deep_sort/weights/ from their author's drive: 
+https://drive.google.com/open?id=1m2ebLHB2JThZC8vWGDYEKGsevLssSkjo
+
+6. Add an empty __init__.py file to object_detection/deep_sort/tools/ as they are imported in the modules. 
