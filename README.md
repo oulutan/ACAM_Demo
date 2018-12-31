@@ -48,7 +48,7 @@ unzip protobuf.zip
 source SET_ENVIRONMENT.sh
 ```
 
-4. Download Tensorflow Object Detection models into object_detection/weights/ from: 
+4. Download and extract Tensorflow Object Detection models into object_detection/weights/ from: 
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md
 
 16 Fps from webcam was achieved by 
