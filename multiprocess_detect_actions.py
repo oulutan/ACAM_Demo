@@ -23,7 +23,7 @@ SHOW_CAMS = False
 ACTION_FREQ = 8
 OBJ_BATCH_SIZE = 16
 DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
-OBJ_GPU = "0"
+OBJ_GPU = "2"
 ACT_GPU = "0"
 
 # separate process definitions
@@ -97,22 +97,13 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
     os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
     main_folder = "./"
-    ## Best
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Good and Faster
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## Fastest
-    #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-    ## EVEN FASTER SSD
-    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_inception_v2_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb"
-    ## fastestest
-    #obj_detection_graph = "/home/oytun/work/tensorflow_object/zoo/batched_zoo/ssd_mobilenet_v1_coco_2018_01_28/batched_graph/frozen_inference_graph.pb"
 
     #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
     #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
     # NAS
-    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -159,7 +150,7 @@ def run_act_detector(shape, detection_q, actions_q):
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-128'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-130'
     main_folder = "./"
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
