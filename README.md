@@ -82,4 +82,6 @@ Object detection and Action detection can use different GPUs for faster performa
 
 3. Input to the action detector is 32 frames and we have %75 overlap between there intervals. This means that every time we run action detectors, we only see 8 new frames. Uploading 32 frames to the gpu is a slow process without pre-fetching. Because of that, in this model, we keep the remaining 24 frames on the GPU as a tf.variable while updating the new 8, like a queue.
 
-4. SSD-MobileNetV2 is a fast detector. Additionally, the input webcam frame is limited to 640x480 resolution.
+4. The planned use for this model was for camera views such as surveillance videos. Because of that, for each detected person, we crop a larger area centered on that person (last section on the paper) instead of using the whole input frame. However, uploading a different cropped region to the GPU for each detected person is also a slow process. So instead we upload the whole input and person locations which are cropped within tensorflow. 
+
+5. SSD-MobileNetV2 is a fast detector. Additionally, the input webcam frame is limited to 640x480 resolution.
