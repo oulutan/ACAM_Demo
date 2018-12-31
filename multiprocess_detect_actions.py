@@ -16,7 +16,7 @@ from multiprocessing import Process, Queue
 import time
 DISPLAY = True
 #SHOW_CAMS = True
-#SHOW_CAMS = False
+SHOW_CAMS = False
         #classes = ["walk", "drink", "bend"]
         #classes = ["point to", "work", "text on"]
         #classes = ["read", "answer phone", "carry"]
