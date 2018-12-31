@@ -14,7 +14,6 @@ import action_detection.action_detector as act
 from multiprocessing import Process, Queue
 
 import time
-DISPLAY = True
 #SHOW_CAMS = True
 SHOW_CAMS = False
         #classes = ["walk", "drink", "bend"]
