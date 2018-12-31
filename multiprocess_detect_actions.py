@@ -15,17 +15,17 @@ from multiprocessing import Process, Queue
 
 import time
 #DISPLAY = True
-#SHOW_CAMS = True
-SHOW_CAMS = False
+SHOW_CAMS = True
+#SHOW_CAMS = False
 
 #USE_WEBCAM = True
 
 ACTION_FREQ = 8
 OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
 #OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
-DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
-OBJ_GPU = "2"
-ACT_GPU = "0"
+DELAY = 50 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
+OBJ_GPU = "0"
+ACT_GPU = "2"
 #ACT_GPU = "0"
 #ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
 
@@ -109,12 +109,10 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
     main_folder = "./"
 
-    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
+    #obj_detection_graph = "./object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    obj_detection_graph = "./object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    #obj_detection_graph = "./object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
-    # NAS
-    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -451,9 +449,9 @@ def visualize_cams(out_dict):#, actor_idx):
         actor_idx = 0
         #classes = ["walk", "drink", "bend"]
         #classes = ["point to", "work", "text on"]
-        #classes = ["stand", "answer phone", "carry"]
+        classes = ["read", "answer phone", "carry"]
         #classes = ["carry/hold", "close", "open"]
-        classes = ["hand clap", "drink", "talk"]
+        #classes = ["work", "drink", "eat"]
         action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
 
         feature_activations = out_dict['final_i3d_feats']
