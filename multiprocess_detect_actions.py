@@ -21,10 +21,15 @@ SHOW_CAMS = False
 #USE_WEBCAM = True
 
 ACTION_FREQ = 8
-OBJ_BATCH_SIZE = 16
+OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
+#OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
 DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
 OBJ_GPU = "2"
 ACT_GPU = "0"
+#ACT_GPU = "0"
+#ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
+
+T = 32 # Timesteps
 
 # separate process definitions
 
@@ -49,10 +54,16 @@ def read_frames(reader, frame_q, use_webcam):
                 time.sleep(DELAY/1000.)
             #print(cur_img.shape)
     else:
-        for cur_img in reader: # this is imageio reader, it uses rgb
+        #for cur_img in reader: # this is imageio reader, it uses rgb
+        nframes = reader.get_length()
+        for ii in range(nframes):
             while frame_q.qsize() > 500: # so that we dont use huge amounts of memory
                 time.sleep(1)
+            cur_img = reader.get_next_data()
             frame_q.put(cur_img)
+            if ii % 100 == 0:
+                print("%i / %i frames in queue" % (ii, nframes))
+        print("All %i frames in queue" % (nframes))
 
 # # object detector and tracker
 # def run_obj_det_and_track(frame_q, detection_q, det_vis_q):
@@ -110,7 +121,7 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
 
 
     obj_detector = obj.Object_Detector(obj_detection_graph)
-    tracker = obj.Tracker()
+    tracker = obj.Tracker(timesteps=T)
     while True:
         img_batch = []
         for _ in range(OBJ_BATCH_SIZE): 
@@ -146,12 +157,13 @@ def run_act_detector(shape, detection_q, actions_q):
     os.environ['CUDA_VISIBLE_DEVICES'] = ACT_GPU
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
-    act_detector = act.Action_Detector('soft_attn')
+    act_detector = act.Action_Detector('soft_attn', timesteps=T)
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
     ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-130'
     main_folder = "./"
+    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     memory_size = act_detector.timesteps - ACTION_FREQ
@@ -160,7 +172,6 @@ def run_act_detector(shape, detection_q, actions_q):
     rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
     
 
-    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
     act_detector.restore_model(ckpt_path)
 
     processed_frames_cnt = 0
@@ -322,7 +333,7 @@ def main():
         W, H = reader.get_meta_data()['size']
         #T = tracker.timesteps
     print("H: %i, W: %i" % (H, W))
-    T = 32
+    #T = 32
     
     # fps_divider = 1
     print('Running actions every %i frame' % ACTION_FREQ)
@@ -374,7 +385,7 @@ def main():
 np.random.seed(10)
 COLORS = np.random.randint(0, 100, [1000, 3]) # get darker colors for bboxes and use white text
 def visualize_detection_results(img_np, active_actors, prob_dict):
-    score_th = 0.30
+    #score_th = 0.30
     action_th = 0.20
 
     # copy the original image first
@@ -387,8 +398,8 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         cur_act_results = prob_dict[actor_id] if actor_id in prob_dict else []
         cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
         
-        if cur_score < score_th: 
-            continue
+        #if cur_score < score_th: 
+        #    continue
 
         top, left, bottom, right = cur_box
 

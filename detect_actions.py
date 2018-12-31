@@ -42,7 +42,8 @@ def main():
     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_resnet50_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 
     # NAS
-    obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
+    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -72,7 +73,7 @@ def main():
     act_detector = act.Action_Detector('soft_attn')
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-130'
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     memory_size = act_detector.timesteps - action_freq
