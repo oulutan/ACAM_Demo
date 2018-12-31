@@ -1,3 +1,6 @@
 [submodule "object_detection/models"]
 	path = object_detection/models
 	url = https://github.com/tensorflow/models
+[submodule "object_detection/deep_sort"]
+	path = object_detection/deep_sort
+	url = https://github.com/oulutan/deep_sort
