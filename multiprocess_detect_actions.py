@@ -14,8 +14,8 @@ import action_detection.action_detector as act
 from multiprocessing import Process, Queue
 
 import time
-#DISPLAY = True
-SHOW_CAMS = True
+DISPLAY = True
+#SHOW_CAMS = True
 #SHOW_CAMS = False
         #classes = ["walk", "drink", "bend"]
         #classes = ["point to", "work", "text on"]
@@ -32,10 +32,9 @@ CAM_CLASSES = ["walk", "stand", "sit", "bend", "run", "talk"]
 ACTION_FREQ = 8
 OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
 #OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
-DELAY = 50 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
+DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
 OBJ_GPU = "0"
-ACT_GPU = "2"
-#ACT_GPU = "0"
+ACT_GPU = "0"
 #ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
 
 T = 32 # Timesteps
