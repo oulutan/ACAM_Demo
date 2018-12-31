@@ -17,6 +17,15 @@ import time
 #DISPLAY = True
 SHOW_CAMS = True
 #SHOW_CAMS = False
+        #classes = ["walk", "drink", "bend"]
+        #classes = ["point to", "work", "text on"]
+        #classes = ["read", "answer phone", "carry"]
+        #classes = ["carry/hold", "close", "open"]
+        #classes = ["work", "drink", "eat"]
+# Object classes
+CAM_CLASSES = ["read", "answer phone", "carry", "text on", "drink", "eat"]
+# Person state classes
+CAM_CLASSES = ["walk", "stand", "sit", "bend", "run", "talk"]
 
 #USE_WEBCAM = True
 
@@ -183,6 +192,8 @@ def run_act_detector(shape, detection_q, actions_q):
         
         if not active_actors:
             prob_dict = {}
+            if SHOW_CAMS:
+                prob_dict = {"cams": visualize_cams({})} 
         else:
             # use the last active actors and rois vectors
             no_actors = len(active_actors)
@@ -260,7 +271,7 @@ def run_visualization(writer, det_vis_q, actions_q, display):
             out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
         else:
             # out_img = visualize_cams(cur_img, prob_dict)
-            img_to_concat = prob_dict["cams"] if "cams" in prob_dict else np.zeros((400, 400, 3), np.uint8)
+            img_to_concat = prob_dict["cams"] #if "cams" in prob_dict else np.zeros((400, 400, 3), np.uint8)
             image = cur_img
             img_new_height = 400
             img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
@@ -434,25 +445,22 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
 
     return disp_img
 
-
 #def visualize_cams(image, out_dict):#, actor_idx):
 def visualize_cams(out_dict):#, actor_idx):
     # img_new_height = 400
     # img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
     # img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
     ##img_to_concat = np.zeros((400, 800, 3), np.uint8)
-    img_to_concat = np.zeros((400, 400, 3), np.uint8)
+    #img_to_concat = np.zeros((400, 400, 3), np.uint8)
+    if len(CAM_CLASSES) < 4:
+        w = 400
+    else:
+        w = 900
+    img_to_concat = np.zeros((400, w, 3), np.uint8)
 
     if out_dict:
-        #classes = ["walk", "bend", "carry"]
-        #classes = ["sit", "ride"]
         actor_idx = 0
-        #classes = ["walk", "drink", "bend"]
-        #classes = ["point to", "work", "text on"]
-        classes = ["read", "answer phone", "carry"]
-        #classes = ["carry/hold", "close", "open"]
-        #classes = ["work", "drink", "eat"]
-        action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
+        action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in CAM_CLASSES])]
 
         feature_activations = out_dict['final_i3d_feats']
         cls_weights = out_dict['cls_weights']
@@ -460,10 +468,16 @@ def visualize_cams(out_dict):#, actor_idx):
         probs = out_dict["pred_probs"]
 
         class_maps = np.matmul(feature_activations, cls_weights)
-        min_val = np.min(class_maps[:,:, :, :, :])
-        max_val = np.max(class_maps[:,:, :, :, :]) - min_val
+        #min_val = np.min(class_maps[:,:, :, :, :])
+        #max_val = np.max(class_maps[:,:, :, :, :]) - min_val
+        min_val = -200.
+        max_val = 300.
+        normalized_cmaps = (class_maps-min_val)/max_val * 255.
+        normalized_cmaps[normalized_cmaps>255] = 255
+        normalized_cmaps[normalized_cmaps<0] = 0
+        normalized_cmaps = np.uint8(normalized_cmaps)
 
-        normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
+        #normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
 
         t_feats = feature_activations.shape[1]
         t_input = input_frames.shape[1]
@@ -482,9 +496,16 @@ def visualize_cams(out_dict):#, actor_idx):
 
                 overlay = cv2.resize(cur_frame.copy(), (100,100))
                 overlay = cv2.addWeighted(overlay, 0.5, colored_cam, 0.5, 0)
+                
+                if cc > 2:
+                    xx = tt + 5 # 4 timesteps visualized per class + 1 empty space
+                    yy = cc - 3 # 3 classes per column
+                else:
+                    xx = tt
+                    yy = cc
 
-                img_to_concat[cc*125:cc*125+100, tt*100:(tt+1)*100, :] = overlay
-            cv2.putText(img_to_concat, message, (20, 13+100+125*cc), 0, 0.5, (255,255,255), 1)
+                img_to_concat[yy*125:yy*125+100, xx*100:(xx+1)*100, :] = overlay
+            cv2.putText(img_to_concat, message, (20+int(cc>2)*500, 13+100+125*yy), 0, 0.5, (255,255,255), 1)
 
     return img_to_concat
     #final_image = np.concatenate([img_to_show, img_to_concat], axis=1)
