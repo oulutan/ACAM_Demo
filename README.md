@@ -1,8 +1,8 @@
 # Actor Conditioned Attention Maps - Demo Repository
 
-This repo contains the demo code for our action recognition model explained in ARXIV LINK. 
+This repo contains the demo code for our action recognition model explained in https://arxiv.org/abs/1812.11631  
 
-This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps .(Currently private repo)
+This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps (Currently private repo)
 
 The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at 
 https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh 
