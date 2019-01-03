@@ -77,10 +77,10 @@ class Tracker():
         self.actor_infos = {}
         # deep sort
         self.encoder = create_box_encoder(MODEL_CKPT, batch_size=16)
-        metric = nn_matching.NearestNeighborDistanceMetric(
-                "cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
+        metric = nn_matching.NearestNeighborDistanceMetric("cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
         #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=3)
-        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=1)
+        #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=1)
+        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=5)
         self.score_th = 0.40
         #self.results = []
 
