@@ -16,11 +16,6 @@ from multiprocessing import Process, Queue
 import time
 #SHOW_CAMS = True
 SHOW_CAMS = False
-        #classes = ["walk", "drink", "bend"]
-        #classes = ["point to", "work", "text on"]
-        #classes = ["read", "answer phone", "carry"]
-        #classes = ["carry/hold", "close", "open"]
-        #classes = ["work", "drink", "eat"]
 # Object classes
 CAM_CLASSES = ["read", "answer phone", "carry", "text on", "drink", "eat"]
 # Person state classes
@@ -29,11 +24,12 @@ CAM_CLASSES = ["walk", "stand", "sit", "bend", "run", "talk"]
 #USE_WEBCAM = True
 
 ACTION_FREQ = 8
-OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
+#OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
+#OBJ_BATCH_SIZE = 4 # with ssd-mobilenet2
 #OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
 DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
-OBJ_GPU = "0"
-ACT_GPU = "0"
+#OBJ_GPU = "0"
+#ACT_GPU = "2"
 #ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
 
 T = 32 # Timesteps
@@ -82,9 +78,6 @@ def read_frames(reader, frame_q, use_webcam):
 #     ## Good and Faster
 #     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 
-#     # NAS
-#     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
-
 
 #     print("Loading object detection model at %s" % obj_detection_graph)
 
@@ -111,14 +104,13 @@ def read_frames(reader, frame_q, use_webcam):
 #         detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
 #         det_vis_q.put([cur_img, actors_snapshot])
 
-def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
+def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q, obj_batch_size, obj_gpu):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
-    os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
+    os.environ['CUDA_VISIBLE_DEVICES'] = obj_gpu
     main_folder = "./"
 
-    #obj_detection_graph = "./object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
     obj_detection_graph = "./object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-    #obj_detection_graph = "./object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
+    #obj_detection_graph = "./object_detection/weights/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
 
 
@@ -129,7 +121,7 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     tracker = obj.Tracker(timesteps=T)
     while True:
         img_batch = []
-        for _ in range(OBJ_BATCH_SIZE): 
+        for _ in range(obj_batch_size): 
             cur_img = frame_q.get()
             img_batch.append(cur_img)
         #expanded_img = np.expand_dims(cur_img, axis=0)
@@ -137,8 +129,8 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
         start_time = time.time()
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
         end_time = time.time()
-        print("%.3f second per image" % ((end_time-start_time) / float(OBJ_BATCH_SIZE)) )
-        for ii in range(OBJ_BATCH_SIZE):
+        print("%.3f second per image" % ((end_time-start_time) / float(obj_batch_size)) )
+        for ii in range(obj_batch_size):
             cur_img = img_batch[ii]
             detection_info = [info[ii] for info in detection_list]
             tracker.update_tracker(detection_info, cur_img)
@@ -157,9 +149,9 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
             det_vis_q.put([cur_img, actors_snapshot])
 
 # Action detector
-def run_act_detector(shape, detection_q, actions_q):
+def run_act_detector(shape, detection_q, actions_q, act_gpu):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
-    os.environ['CUDA_VISIBLE_DEVICES'] = ACT_GPU
+    os.environ['CUDA_VISIBLE_DEVICES'] = act_gpu
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn', timesteps=T)
@@ -301,10 +293,17 @@ def main():
 
     parser.add_argument('-v', '--video_path', type=str, required=False, default="")
     parser.add_argument('-d', '--display', type=str, required=False, default="True")
+    parser.add_argument('-b', '--obj_batch_size', type=int, required=False, default=16)
+    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0")
+    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0")
 
     args = parser.parse_args()
     use_webcam = args.video_path == ""
     display = (args.display == "True" or args.display == "true")
+
+    obj_batch_size = args.obj_batch_size
+    obj_gpu = args.obj_gpu
+    act_gpu = args.act_gpu
     
     #actor_to_display = 6 # for cams
 
@@ -324,6 +323,7 @@ def main():
     if use_webcam:
         print("Using webcam")
         reader = cv2.VideoCapture(0)
+        ## We can set the input shape from webcam, I use the default 640x480 to achieve real-time
         #reader.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         #reader.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         ret, frame = reader.read()
@@ -358,8 +358,8 @@ def main():
 
     frame_reader_p = Process(target=read_frames, args=(reader, frame_q, use_webcam))
     #obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
-    obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q))
-    action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q))
+    obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q, obj_batch_size, obj_gpu))
+    action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q, act_gpu))
     visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q, display))
 
     processes = [frame_reader_p, obj_detector_p, action_detector_p, visualization_p]
