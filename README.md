@@ -70,7 +70,12 @@ There are 2 main scripts in this repo.
 
 ```multiprocess_detect_actions.py``` is the fast version where each module runs separately on their own process.
 
-There are 2 arguments to each script. --v (--videopath) is the path to the video and if it is not provided, webcam will be used. -d (--display) is the display flag where the results will be visualized using OpenCV.
+Arguments:
+* --v (--videopath): The path to the video and if it is not provided, webcam will be used.
+* -b (--obj_batch_size): Batch size for the object detector. Depending on the model used and gpu memory size, this should be changed. 
+* -o (--obj_gpu): Which GPU to use for object detector. Uses "CUDA_VISIBLE_DEVICES" environment var. Could be the same with action detector but in that case obj batch size should be reduced. 
+* -a (--act_gpu): Which GPU to use for action detector. Uses "CUDA_VISIBLE_DEVICES" environment var. Could be the same with object detector but in that case obj batch size should be reduced. 
+* -d (--display): The display flag where the results will be visualized using OpenCV.
 
 Object detection model can be replaced by any model in the API model zoo. Additionally, there is a object detection batch size parameter which should be changed depending on the GPU memory size and object model detection requirements. 
 
