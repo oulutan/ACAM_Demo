@@ -19,7 +19,7 @@ The demo code includes a complete pipeline including object detection (Using TF 
 3. DeepSort (explained in next section)
 4. TF object detection API (explained in next section)
 5. OpenCV for webcam input and displaying purposes
-6. ImageIO for video IO ```pip install imageio```. I rather use ImageIO for video IO than OpenCV as it is (a lot) easier to setup. This is being used when the input is a video file instead of webcam.
+6. ImageIO for video IO ```pip install imageio```. I rather use ImageIO for video IO than OpenCV as it is (a lot) easier to setup for video support. This is being used when the input is a video file instead of webcam.
 
 # Installation
 
