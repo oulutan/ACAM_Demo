@@ -291,11 +291,13 @@ def run_visualization(writer, det_vis_q, actions_q, display):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-v', '--video_path', type=str, required=False, default="")
-    parser.add_argument('-d', '--display', type=str, required=False, default="True")
-    parser.add_argument('-b', '--obj_batch_size', type=int, required=False, default=16)
-    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0")
-    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0")
+    parser.add_argument('-v', '--video_path', type=str, required=False, default="", help="The path to the video and if it is not provided, webcam will be used.")
+    parser.add_argument('-d', '--display', type=str, required=False, default="True",help="The display flag where the results will be visualized using OpenCV.")
+    parser.add_argument('-b', '--obj_batch_size', type=int, required=False, default=16, help="Batch size for the object detector. Depending on the model used and gpu memory size, this should be changed.")
+    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0", help="Which GPU to use for object detector. Uses CUDA_VISIBLE_DEVICES
+                        environment var. Could be the same with action detector but in that case obj batch size should be reduced.")
+    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0", help="Which GPU to use for action detector. Uses CUDA_VISIBLE_DEVICES
+                        environment var. Could be the same with object detector but in that case obj batch size should be reduced.")
 
     args = parser.parse_args()
     use_webcam = args.video_path == ""
