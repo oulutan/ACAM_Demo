@@ -64,6 +64,9 @@ def read_frames(reader, frame_q, use_webcam):
                 time.sleep(1)
             cur_img = reader.get_next_data()
             frame_q.put(cur_img)
+            #shape = cur_img.shape
+            #noisy_img = np.uint8(cur_img.astype(np.float) + np.random.randn(*shape) * 20)
+            #frame_q.put(noisy_img)
             if ii % 100 == 0:
                 print("%i / %i frames in queue" % (ii, nframes))
         print("All %i frames in queue" % (nframes))
@@ -294,10 +297,8 @@ def main():
     parser.add_argument('-v', '--video_path', type=str, required=False, default="", help="The path to the video and if it is not provided, webcam will be used.")
     parser.add_argument('-d', '--display', type=str, required=False, default="True",help="The display flag where the results will be visualized using OpenCV.")
     parser.add_argument('-b', '--obj_batch_size', type=int, required=False, default=16, help="Batch size for the object detector. Depending on the model used and gpu memory size, this should be changed.")
-    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0", help="Which GPU to use for object detector. Uses CUDA_VISIBLE_DEVICES
-                        environment var. Could be the same with action detector but in that case obj batch size should be reduced.")
-    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0", help="Which GPU to use for action detector. Uses CUDA_VISIBLE_DEVICES
-                        environment var. Could be the same with object detector but in that case obj batch size should be reduced.")
+    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0", help="Which GPU to use for object detector. Uses CUDA_VISIBLE_DEVICES environment var. Could be the same with action detector but in that case obj batch size should be reduced.")
+    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0", help="Which GPU to use for action detector. Uses CUDA_VISIBLE_DEVICES environment var. Could be the same with object detector but in that case obj batch size should be reduced.")
 
     args = parser.parse_args()
     use_webcam = args.video_path == ""
