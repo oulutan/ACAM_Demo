@@ -8,10 +8,10 @@ The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiproce
 
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
-Object interactions activation maps: https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R
-Person movement actions activation maps: https://drive.google.com/open?id=1U2E1WvYlvKGmlbnVlOu8CWYhsApKygCR
+[Object interactions activation maps](https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R)
+[Person movement actions activation maps](https://drive.google.com/open?id=1U2E1WvYlvKGmlbnVlOu8CWYhsApKygCR)
 
-The demo code includes a complete pipeline including object detection (Using TF Object API: https://github.com/tensorflow/models), tracking/bbox matching (Using DeepSort: https://github.com/nwojke/deep_sort) and our action detection module.
+The demo code includes a complete pipeline including object detection (Using [TF Object API](https://github.com/tensorflow/models)), tracking/bbox matching (Using [DeepSort](https://github.com/nwojke/deep_sort)) and our action detection module.
 
 # Requirements
 1. Tensorflow (Tested with 1.7 and 1.12)
