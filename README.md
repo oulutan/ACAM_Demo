@@ -6,6 +6,8 @@ This repo only contains the demo code, training and evaluation codes will be rel
 
 The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh)
 
+![demo](https://drive.google.com/file/d/1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh/view)
+
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
 [Object interactions activation maps](https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R) and 
