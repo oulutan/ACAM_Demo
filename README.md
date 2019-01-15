@@ -4,14 +4,19 @@ This repo contains the demo code for our action recognition model explained in h
 
 This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps (Currently private repo)
 
-The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh)
+The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh). Following is a snapshot from the video. 
 
 ![Action Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/lab_actions_snap.png)
 
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
-[Object interactions activation maps](https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R) and 
+
+[Object interactions activation maps](https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R) 
+![Object Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/object_cams_snap.png)
+
+
 [Person movement actions activation maps](https://drive.google.com/open?id=1U2E1WvYlvKGmlbnVlOu8CWYhsApKygCR)
+![Person Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/person_states_snap.png)
 
 The demo code includes a complete pipeline including object detection (Using [TF Object API](https://github.com/tensorflow/models)), tracking/bbox matching (Using [DeepSort](https://github.com/nwojke/deep_sort)) and our action detection module.
 
