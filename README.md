@@ -6,7 +6,7 @@ This repo only contains the demo code, training and evaluation codes will be rel
 
 The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh). Following is a snapshot from the video. 
 
-![Action Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/lab_actions_snap.png=600x500)
+<img src="https://github.com/oulutan/ACAM_Demo/blob/master/github_images/lab_actions_snap.png" width="500">
 
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
