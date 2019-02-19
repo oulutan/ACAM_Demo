@@ -14,19 +14,23 @@ import action_detection.action_detector as act
 from multiprocessing import Process, Queue
 
 import time
-#DISPLAY = True
 #SHOW_CAMS = True
 SHOW_CAMS = False
+# Object classes
+CAM_CLASSES = ["read", "answer phone", "carry", "text on", "drink", "eat"]
+# Person state classes
+CAM_CLASSES = ["walk", "stand", "sit", "bend", "run", "talk"]
 
 #USE_WEBCAM = True
 
 ACTION_FREQ = 8
 #OBJ_BATCH_SIZE = 16 # with ssd-mobilenet2
-OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
+#OBJ_BATCH_SIZE = 4 # with ssd-mobilenet2
+#OBJ_BATCH_SIZE = 1 # with NAS, otherwise memory exhausts
 DELAY = 60 # ms, this limits the input around 16 fps. This makes sense as the action model was trained with similar fps videos.
-OBJ_GPU = "0"
-#ACT_GPU = "0"
-ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
+#OBJ_GPU = "0"
+#ACT_GPU = "2"
+#ACT_GPU = "1" # if using nas and/or high res input use different GPUs for each process
 
 T = 32 # Timesteps
 
@@ -60,6 +64,9 @@ def read_frames(reader, frame_q, use_webcam):
                 time.sleep(1)
             cur_img = reader.get_next_data()
             frame_q.put(cur_img)
+            #shape = cur_img.shape
+            #noisy_img = np.uint8(cur_img.astype(np.float) + np.random.randn(*shape) * 20)
+            #frame_q.put(noisy_img)
             if ii % 100 == 0:
                 print("%i / %i frames in queue" % (ii, nframes))
         print("All %i frames in queue" % (nframes))
@@ -73,9 +80,6 @@ def read_frames(reader, frame_q, use_webcam):
 #     # obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
 #     ## Good and Faster
 #     #obj_detection_graph =  os.path.join(main_folder, 'object_detection/weights/batched_zoo/faster_rcnn_nas_lowproposals_coco_2018_01_28/batched_graph/frozen_inference_graph.pb')
-
-#     # NAS
-#     #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
 #     print("Loading object detection model at %s" % obj_detection_graph)
@@ -103,16 +107,14 @@ def read_frames(reader, frame_q, use_webcam):
 #         detection_q.put([cur_img, actors_snapshot, rois_np, temporal_rois_np])
 #         det_vis_q.put([cur_img, actors_snapshot])
 
-def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
+def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q, obj_batch_size, obj_gpu):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
-    os.environ['CUDA_VISIBLE_DEVICES'] = OBJ_GPU
+    os.environ['CUDA_VISIBLE_DEVICES'] = obj_gpu
     main_folder = "./"
 
-    obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
-    #obj_detection_graph = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/weights/tf_zoo/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
+    obj_detection_graph = "./object_detection/weights/ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb"
+    #obj_detection_graph = "./object_detection/weights/faster_rcnn_resnet101_coco_2018_01_28/frozen_inference_graph.pb"
 
-    # NAS
-    #obj_detection_graph =  '/home/oytun/work/tensorflow_object/zoo/batched_zoo/faster_rcnn_nas_coco_2018_01_28_lowth/batched_graph/frozen_inference_graph.pb'
 
 
     print("Loading object detection model at %s" % obj_detection_graph)
@@ -122,7 +124,7 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
     tracker = obj.Tracker(timesteps=T)
     while True:
         img_batch = []
-        for _ in range(OBJ_BATCH_SIZE): 
+        for _ in range(obj_batch_size): 
             cur_img = frame_q.get()
             img_batch.append(cur_img)
         #expanded_img = np.expand_dims(cur_img, axis=0)
@@ -130,8 +132,8 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
         start_time = time.time()
         detection_list = obj_detector.detect_objects_in_np(expanded_img)
         end_time = time.time()
-        print("%.3f second per image" % ((end_time-start_time) / float(OBJ_BATCH_SIZE)) )
-        for ii in range(OBJ_BATCH_SIZE):
+        print("%.3f second per image" % ((end_time-start_time) / float(obj_batch_size)) )
+        for ii in range(obj_batch_size):
             cur_img = img_batch[ii]
             detection_info = [info[ii] for info in detection_list]
             tracker.update_tracker(detection_info, cur_img)
@@ -150,17 +152,18 @@ def run_obj_det_and_track_in_batches(frame_q, detection_q, det_vis_q):
             det_vis_q.put([cur_img, actors_snapshot])
 
 # Action detector
-def run_act_detector(shape, detection_q, actions_q):
+def run_act_detector(shape, detection_q, actions_q, act_gpu):
     import tensorflow as tf # there is a bug. if you dont import tensorflow within the process you cant use the same gpus for both processes.
-    os.environ['CUDA_VISIBLE_DEVICES'] = ACT_GPU
+    os.environ['CUDA_VISIBLE_DEVICES'] = act_gpu
     # act_detector = act.Action_Detector('i3d_tail')
     # ckpt_name = 'model_ckpt_RGB_i3d_pooled_tail-4'
     act_detector = act.Action_Detector('soft_attn', timesteps=T)
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
-    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-128'
+    ckpt_name = 'model_ckpt_soft_attn_pooled_cosine_drop_ava-130'
     main_folder = "./"
+    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
 
     #input_frames, temporal_rois, temporal_roi_batch_indices, cropped_frames = act_detector.crop_tubes_in_tf([T,H,W,3])
     memory_size = act_detector.timesteps - ACTION_FREQ
@@ -169,7 +172,6 @@ def run_act_detector(shape, detection_q, actions_q):
     rois, roi_batch_indices, pred_probs = act_detector.define_inference_with_placeholders_noinput(cropped_frames)
     
 
-    ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
     act_detector.restore_model(ckpt_path)
 
     processed_frames_cnt = 0
@@ -183,6 +185,8 @@ def run_act_detector(shape, detection_q, actions_q):
         
         if not active_actors:
             prob_dict = {}
+            if SHOW_CAMS:
+                prob_dict = {"cams": visualize_cams({})} 
         else:
             # use the last active actors and rois vectors
             no_actors = len(active_actors)
@@ -260,7 +264,7 @@ def run_visualization(writer, det_vis_q, actions_q, display):
             out_img = visualize_detection_results(cur_img, active_actors, prob_dict)
         else:
             # out_img = visualize_cams(cur_img, prob_dict)
-            img_to_concat = prob_dict["cams"] if "cams" in prob_dict else np.zeros((400, 400, 3), np.uint8)
+            img_to_concat = prob_dict["cams"] #if "cams" in prob_dict else np.zeros((400, 400, 3), np.uint8)
             image = cur_img
             img_new_height = 400
             img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
@@ -290,12 +294,19 @@ def run_visualization(writer, det_vis_q, actions_q, display):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-v', '--video_path', type=str, required=False, default="")
-    parser.add_argument('-d', '--display', type=str, required=False, default="True")
+    parser.add_argument('-v', '--video_path', type=str, required=False, default="", help="The path to the video and if it is not provided, webcam will be used.")
+    parser.add_argument('-d', '--display', type=str, required=False, default="True",help="The display flag where the results will be visualized using OpenCV.")
+    parser.add_argument('-b', '--obj_batch_size', type=int, required=False, default=16, help="Batch size for the object detector. Depending on the model used and gpu memory size, this should be changed.")
+    parser.add_argument('-o', '--obj_gpu', type=str, required=False, default="0", help="Which GPU to use for object detector. Uses CUDA_VISIBLE_DEVICES environment var. Could be the same with action detector but in that case obj batch size should be reduced.")
+    parser.add_argument('-a', '--act_gpu', type=str, required=False, default="0", help="Which GPU to use for action detector. Uses CUDA_VISIBLE_DEVICES environment var. Could be the same with object detector but in that case obj batch size should be reduced.")
 
     args = parser.parse_args()
     use_webcam = args.video_path == ""
     display = (args.display == "True" or args.display == "true")
+
+    obj_batch_size = args.obj_batch_size
+    obj_gpu = args.obj_gpu
+    act_gpu = args.act_gpu
     
     #actor_to_display = 6 # for cams
 
@@ -315,6 +326,7 @@ def main():
     if use_webcam:
         print("Using webcam")
         reader = cv2.VideoCapture(0)
+        ## We can set the input shape from webcam, I use the default 640x480 to achieve real-time
         #reader.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         #reader.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         ret, frame = reader.read()
@@ -349,8 +361,8 @@ def main():
 
     frame_reader_p = Process(target=read_frames, args=(reader, frame_q, use_webcam))
     #obj_detector_p = Process(target=run_obj_det_and_track, args=(frame_q, detection_q, det_vis_q))
-    obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q))
-    action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q))
+    obj_detector_p = Process(target=run_obj_det_and_track_in_batches, args=(frame_q, detection_q, det_vis_q, obj_batch_size, obj_gpu))
+    action_detector_p = Process(target=run_act_detector, args=(shape, detection_q, actions_q, act_gpu))
     visualization_p = Process(target=run_visualization, args=(writer, det_vis_q, actions_q, display))
 
     processes = [frame_reader_p, obj_detector_p, action_detector_p, visualization_p]
@@ -383,7 +395,7 @@ def main():
 np.random.seed(10)
 COLORS = np.random.randint(0, 100, [1000, 3]) # get darker colors for bboxes and use white text
 def visualize_detection_results(img_np, active_actors, prob_dict):
-    score_th = 0.30
+    #score_th = 0.30
     action_th = 0.20
 
     # copy the original image first
@@ -396,8 +408,8 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         cur_act_results = prob_dict[actor_id] if actor_id in prob_dict else []
         cur_box, cur_score, cur_class = cur_actor['all_boxes'][-1], cur_actor['all_scores'][-1], 1
         
-        if cur_score < score_th: 
-            continue
+        #if cur_score < score_th: 
+        #    continue
 
         top, left, bottom, right = cur_box
 
@@ -434,25 +446,22 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
 
     return disp_img
 
-
 #def visualize_cams(image, out_dict):#, actor_idx):
 def visualize_cams(out_dict):#, actor_idx):
     # img_new_height = 400
     # img_new_width = int(image.shape[1] / float(image.shape[0]) * img_new_height)
     # img_to_show = cv2.resize(image.copy(), (img_new_width,img_new_height))[:,:,::-1]
     ##img_to_concat = np.zeros((400, 800, 3), np.uint8)
-    img_to_concat = np.zeros((400, 400, 3), np.uint8)
+    #img_to_concat = np.zeros((400, 400, 3), np.uint8)
+    if len(CAM_CLASSES) < 4:
+        w = 400
+    else:
+        w = 900
+    img_to_concat = np.zeros((400, w, 3), np.uint8)
 
     if out_dict:
-        #classes = ["walk", "bend", "carry"]
-        #classes = ["sit", "ride"]
         actor_idx = 0
-        #classes = ["walk", "drink", "bend"]
-        #classes = ["point to", "work", "text on"]
-        #classes = ["stand", "answer phone", "carry"]
-        #classes = ["carry/hold", "close", "open"]
-        classes = ["hand clap", "drink", "talk"]
-        action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in classes])]
+        action_classes = [cc for cc in range(60) if any([cname in act.ACTION_STRINGS[cc] for cname in CAM_CLASSES])]
 
         feature_activations = out_dict['final_i3d_feats']
         cls_weights = out_dict['cls_weights']
@@ -460,10 +469,16 @@ def visualize_cams(out_dict):#, actor_idx):
         probs = out_dict["pred_probs"]
 
         class_maps = np.matmul(feature_activations, cls_weights)
-        min_val = np.min(class_maps[:,:, :, :, :])
-        max_val = np.max(class_maps[:,:, :, :, :]) - min_val
+        #min_val = np.min(class_maps[:,:, :, :, :])
+        #max_val = np.max(class_maps[:,:, :, :, :]) - min_val
+        min_val = -200.
+        max_val = 300.
+        normalized_cmaps = (class_maps-min_val)/max_val * 255.
+        normalized_cmaps[normalized_cmaps>255] = 255
+        normalized_cmaps[normalized_cmaps<0] = 0
+        normalized_cmaps = np.uint8(normalized_cmaps)
 
-        normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
+        #normalized_cmaps = np.uint8((class_maps-min_val)/max_val * 255.)
 
         t_feats = feature_activations.shape[1]
         t_input = input_frames.shape[1]
@@ -482,9 +497,16 @@ def visualize_cams(out_dict):#, actor_idx):
 
                 overlay = cv2.resize(cur_frame.copy(), (100,100))
                 overlay = cv2.addWeighted(overlay, 0.5, colored_cam, 0.5, 0)
+                
+                if cc > 2:
+                    xx = tt + 5 # 4 timesteps visualized per class + 1 empty space
+                    yy = cc - 3 # 3 classes per column
+                else:
+                    xx = tt
+                    yy = cc
 
-                img_to_concat[cc*125:cc*125+100, tt*100:(tt+1)*100, :] = overlay
-            cv2.putText(img_to_concat, message, (20, 13+100+125*cc), 0, 0.5, (255,255,255), 1)
+                img_to_concat[yy*125:yy*125+100, xx*100:(xx+1)*100, :] = overlay
+            cv2.putText(img_to_concat, message, (20+int(cc>2)*500, 13+100+125*yy), 0, 0.5, (255,255,255), 1)
 
     return img_to_concat
     #final_image = np.concatenate([img_to_show, img_to_concat], axis=1)

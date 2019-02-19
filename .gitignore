@@ -1,6 +1,10 @@
 *.pyc
-object_detection/weights/tf_zoo
-object_detection/weights/batched_zoo
-action_detection/weights/
+object_detection/weights/*
+action_detection/weights/*
 videos/*
 output_videos/*
+
+# keep the folders
+!output_videos/.gitkeep
+!action_detection/weights/.gitkeep
+!object_detection/weights/.gitkeep

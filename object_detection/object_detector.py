@@ -65,7 +65,7 @@ from tools.generate_detections import create_box_encoder
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker as ds_Tracker
-MODEL_CKPT = "/home/oytun/work/Conditional_Attention_Maps_Demo/object_detection/deep_sort/weights/mars-small128.pb"
+MODEL_CKPT = "./object_detection/deep_sort/weights/mars-small128.pb"
 class Tracker():
     def __init__(self, timesteps=32):
         self.active_actors = []
@@ -77,10 +77,11 @@ class Tracker():
         self.actor_infos = {}
         # deep sort
         self.encoder = create_box_encoder(MODEL_CKPT, batch_size=16)
-        metric = nn_matching.NearestNeighborDistanceMetric(
-                "cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
+        metric = nn_matching.NearestNeighborDistanceMetric("cosine", 0.2, None) #, max_cosine_distance=0.2) #, nn_budget=None)
         #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=30, n_init=3)
-        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=1)
+        #self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=1)
+        self.tracker = ds_Tracker(metric, max_iou_distance=0.7, max_age=200, n_init=5)
+        self.score_th = 0.40
         #self.results = []
 
     # def add_frame(self, frame):
@@ -108,10 +109,10 @@ class Tracker():
         ''' Takes the frame and the results from the object detection
             Updates the tracker wwith the current detections and creates new tracks
         '''
-        score_th = 0.30
+        #score_th = 0.30
 
         boxes, scores, classes, num_detections = detection_info
-        indices = np.logical_and(scores > score_th, classes == 1)# filter score threshold and non-person detections
+        indices = np.logical_and(scores > self.score_th, classes == 1)# filter score threshold and non-person detections
         filtered_boxes, filtered_scores = boxes[indices], scores[indices]
 
         H,W,C = frame.shape
@@ -148,6 +149,7 @@ class Tracker():
             left, top, width, height = bbox
             tr_box = [top / float(H), left / float(W), (top+height)/float(H), (left+width)/float(W)]
             actor_id = track.track_id
+            detection_conf = track.last_detection_confidence
             #results.append([frame_idx, track.track_id, bbox[0], bbox[1], bbox[2], bbox[3]])
             #results.append({'all_boxes': [tr_box], 'all_scores': [1.00], 'actor_id': track.track_id})
             if actor_id in self.actor_infos: # update with the new bbox info
@@ -157,9 +159,10 @@ class Tracker():
                 cur_actor['all_boxes'].extend(interpolated_box_list[1:])
                 cur_actor['last_updated_frame_no'] = self.frame_no
                 cur_actor['length'] = len(cur_actor['all_boxes'])
+                cur_actor['all_scores'].append(detection_conf)
                 actives.append(cur_actor)
             else:
-                new_actor = {'all_boxes': [tr_box], 'length':1, 'last_updated_frame_no': self.frame_no, 'all_scores':[1.0], 'actor_id':actor_id}
+                new_actor = {'all_boxes': [tr_box], 'length':1, 'last_updated_frame_no': self.frame_no, 'all_scores':[detection_conf], 'actor_id':actor_id}
                 self.actor_infos[actor_id] = new_actor
 
         self.active_actors = actives
