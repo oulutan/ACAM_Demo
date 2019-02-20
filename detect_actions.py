@@ -38,7 +38,7 @@ def main():
     # NAS
 
     obj_detection_model =  'ssd_mobilenet_v2_coco_2018_03_29'
-    obj_detection_graph = os.path.join("object_detection", "weights", obj_detectio_model, "frozen_inference_graph.pb")
+    obj_detection_graph = os.path.join("object_detection", "weights", obj_detection_model, "frozen_inference_graph.pb")
 
 
 
