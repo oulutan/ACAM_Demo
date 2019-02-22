@@ -32,7 +32,7 @@ Additionally, we implemented the activation map displaying functionality to the 
 The demo code includes a complete pipeline including object detection (Using [TF Object API](https://github.com/tensorflow/models)), tracking/bbox matching (Using [DeepSort](https://github.com/nwojke/deep_sort)) and our action detection module.
 
 # Requirements
-1. Tensorflow (Tested with 1.7 and 1.12)
+1. Tensorflow (Tested with 1.7, 1.11, 1.12)
 2. Sonnet (DeepMind) for I3D backbone ``` pip install dm-sonnet ```
 3. DeepSort (explained in next section)
 4. TF object detection API (explained in next section)
