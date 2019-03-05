@@ -34,10 +34,10 @@ The demo code includes a complete pipeline including object detection (Using [TF
 # Requirements
 1. Tensorflow (Tested with 1.7, 1.11, 1.12)
 2. Sonnet (DeepMind) for I3D backbone ``` pip install dm-sonnet ```
-3. DeepSort (explained in next section)
+3. DeepSort (explained in next section), you need to use my fork of it. Just clone this repo with --recursive
 4. TF object detection API (explained in next section)
 5. OpenCV for webcam input and displaying purposes
-6. ImageIO for video IO ```pip install imageio```. I rather use ImageIO for video IO than OpenCV as it is (a lot) easier to setup for video support. This is being used when the input is a video file instead of webcam.
+6. ImageIO (2.4.1) for video IO ```pip install imageio==2.4.1```. I rather use ImageIO for video IO than OpenCV as it is (a lot) easier to setup for video support. This is being used when the input is a video file instead of webcam.
 
 # Installation
 
