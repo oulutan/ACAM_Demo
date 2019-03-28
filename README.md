@@ -112,6 +112,8 @@ This script removes all the object detector/tracker parts from the code and only
 
 This script only takes a tube as input. In this tube, it is assumed that person is centered and a larger context is also available. Context/actor ratio is defined in ```rois_np``` variable. (Currently assumes actor is in coordinates [0.25 - 0.75]).
 
+A sample tube is provided. ```person_0_tube.mp4```
+
 # How is real-time performance achieved?
 
 1. Multiprocessing. Each module in the pipeline (Video input, Object detection/tracking, Action Detection and Video output) runs separately on different processes. Additional performance can be achieved by using separate gpus. 
