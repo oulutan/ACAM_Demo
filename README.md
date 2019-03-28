@@ -33,7 +33,7 @@ The demo code includes a complete pipeline including object detection (Using [TF
 
 # Requirements
 1. Tensorflow (Tested with 1.7, 1.11, 1.12)
-2. Sonnet (DeepMind) for I3D backbone ``` pip install dm-sonnet ```
+2. Sonnet 1.21 (DeepMind) for I3D backbone ``` pip install dm-sonnet==1.21 ```
 3. DeepSort (explained in next section), you need to use my fork of it. Just clone this repo with --recursive
 4. TF object detection API (explained in next section)
 5. OpenCV (3.3.0) with contrib for webcam input and displaying purposes
