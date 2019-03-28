@@ -104,13 +104,21 @@ A sample input is included for testing purposes. Run the model on it using:
 python multiprocess_detect_actions.py --video_path sample_input.mp4
 ```
 
+UPDATE: We included a simple script to use the action detection directly. 
+
+```simple_detect_actions_on_tube.py```
+
+This script removes all the object detector/tracker parts from the code and only uses the action detector part. This should be your starting point if you want to switch out the object detectors or build something just using the action detector. 
+
+This script only takes a tube as input. In this tube, it is assumed that person is centered and a larger context is also available. Context/actor ratio is defined in ```rois_np``` variable. (Currently assumes actor is in coordinates [0.25 - 0.75]).
+
 # How is real-time performance achieved?
 
 1. Multiprocessing. Each module in the pipeline (Video input, Object detection/tracking, Action Detection and Video output) runs separately on different processes. Additional performance can be achieved by using separate gpus. 
 
 2. Object Detector batched processing. Instead of running the object detector on each frame separately, performance was improved by batching multiple frames together. 
 
-3. Input to the action detector is 32 frames and we have %75 overlap between there intervals. This means that every time we run action detectors, we only see 8 new frames. Uploading 32 frames to the gpu is a slow process without pre-fetching. Because of that, in this model, we keep the remaining 24 frames on the GPU as a tf.variable while updating the new 8, like a queue.
+3. Input to the action detector is 32 frames and we have %75 overlap between their intervals. This means that every time we run action detectors, we only see 8 new frames. Uploading 32 frames to the gpu is a slow process without pre-fetching. Because of that, in this model, we keep the remaining 24 frames on the GPU as a tf.variable while updating the new 8, like a queue.
 
 4. The planned use for this model was for camera views such as surveillance videos. Because of that, for each detected person, we crop a larger area centered on that person (last section on the paper) instead of using the whole input frame. However, uploading a different cropped region to the GPU for each detected person is also a slow process. So instead we upload the whole input and person locations which are cropped within tensorflow. 
 
