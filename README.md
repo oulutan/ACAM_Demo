@@ -7,11 +7,13 @@ If you use this work, please cite our paper:
 ```
 @article{ulutan2018actor,
   title={Actor Conditioned Attention Maps for Video Action Detection},
-  author={Ulutan, Oytun and Rallapalli, Swati and Srivatsa, Mudhakar and Manjunath, BS},
+  author={Ulutan, Oytun and Rallapalli, Swati and Torres,Carlos and Srivatsa, Mudhakar and Manjunath, BS},
   journal={arXiv preprint arXiv:1812.11631},
   year={2018}
 }
 ```
+
+Updated version of our paper is out! Check it out on Arxiv.
 
 This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps (Currently private repo)
 
