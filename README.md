@@ -9,7 +9,7 @@ If you use this work, please cite our paper:
   title={Actor Conditioned Attention Maps for Video Action Detection},
   author={Ulutan, Oytun and Rallapalli, Swati and Torres,Carlos and Srivatsa, Mudhakar and Manjunath, BS},
   journal={arXiv preprint arXiv:1812.11631},
-  year={2019}
+  year={2018}
 }
 ```
 
