@@ -161,7 +161,7 @@ def run_act_detector(shape, detection_q, actions_q, act_gpu):
     #ckpt_name = 'model_ckpt_RGB_soft_attn-16'
     #ckpt_name = 'model_ckpt_soft_attn_ava-23'
     #ckpt_name = 'model_ckpt_soft_attn_pooled_ava-52'
-    ckpt_name = 'gestures_model_ckpt_first_gestures-4'
+    ckpt_name = 'gestures_model_ckpt_first_gestures-7'
     main_folder = "./"
     ckpt_path = os.path.join(main_folder, 'action_detection', 'weights', ckpt_name)
 
