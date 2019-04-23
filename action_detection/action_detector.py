@@ -9,7 +9,8 @@ class Action_Detector():
         
 
         self.is_training = tf.constant(False)
-        self.num_classes = 60
+        #self.num_classes = 60
+        self.num_classes = 8
         self.input_size = [400,400]
         self.timesteps = timesteps
         self.max_rois = 1
@@ -70,7 +71,8 @@ class Action_Detector():
                                     name='CLS_Logits', 
                                     kernel_initializer=tf.truncated_normal_initializer(mean=0.0,stddev=0.01))
 
-            pred_probs = tf.nn.sigmoid(logits)
+            #pred_probs = tf.nn.sigmoid(logits)
+            pred_probs = tf.nn.softmax(logits)
 
             self.init_op = tf.global_variables_initializer()
 
@@ -267,7 +269,8 @@ class Action_Detector():
             roi_box_features = temporal_roi_cropping(context_features, shifted_rois, cur_b_idx, BOX_CROP_SIZE)
             R = tf.shape(shifted_rois)[0]
 
-            flat_box_feats = self.basic_model(roi_box_features)
+            #flat_box_feats = self.basic_model(roi_box_features)
+            flat_box_feats = self.basic_model_pooled(roi_box_features)
             roi_embedding = tf.layers.dense(flat_box_feats, 
                                             feature_map_channel, 
                                             activation=tf.nn.relu,
@@ -519,64 +522,74 @@ def temporal_roi_cropping(features, rois, batch_indices, crop_size, temp_rois=Fa
  
     return boxes #, stacked_features
 
-ACTION_STRINGS = { \
-0: "bend/bow (at the waist)",
-1: "crouch/kneel",
-2: "dance",
-3: "fall down",
-4: "get up",
-5: "jump/leap",
-6: "lie/sleep",
-7: "martial art",
-8: "run/jog",
-9: "sit",
-10: "stand",
-11: "swim",
-12: "walk",
-13: "answer phone",
-14: "carry/hold (an object)",
-15: "climb (e.g., a mountain)",
-16: "close (e.g., a door, a box)",
-17: "cut",
-18: "dress/put on clothing",
-19: "drink",
-20: "drive (e.g., a car, a truck)",
-21: "eat",
-22: "enter",
-23: "hit (an object)",
-24: "lift/pick up",
-25: "listen (e.g., to music)",
-26: "open (e.g., a window, a car door)",
-27: "play musical instrument",
-28: "point to (an object)",
-29: "pull (an object)",
-30: "push (an object)",
-31: "put down",
-32: "read",
-33: "ride (e.g., a bike, a car, a horse)",
-34: "sail boat",
-35: "shoot",
-36: "smoke",
-37: "take a photo",
-38: "text on/look at a cellphone",
-39: "throw",
-40: "touch (an object)",
-41: "turn (e.g., a screwdriver)",
-42: "watch (e.g., TV)",
-43: "work on a computer",
-44: "write",
-45: "fight/hit (a person)",
-46: "give/serve (an object) to (a person)",
-47: "grab (a person)",
-48: "hand clap",
-49: "hand shake",
-50: "hand wave",
-51: "hug (a person)",
-52: "kiss (a person)",
-53: "lift (a person)",
-54: "listen to (a person)",
-55: "push (another person)",
-56: "sing to (e.g., self, a person, a group)",
-57: "take (an object) from (a person)",
-58: "talk to (e.g., self, a person, a group)",
-59: "watch (a person)" }
+ACTION_STRINGS = {
+    0:'Idle',
+    1:'Advance',
+    2:'Attention',
+    3:'Rally',
+    4:'Forward',
+    5:'Halt',
+    6:'FollowMe',
+    7:'Reverse',
+}
+# ACTION_STRINGS = { \
+# 0: "bend/bow (at the waist)",
+# 1: "crouch/kneel",
+# 2: "dance",
+# 3: "fall down",
+# 4: "get up",
+# 5: "jump/leap",
+# 6: "lie/sleep",
+# 7: "martial art",
+# 8: "run/jog",
+# 9: "sit",
+# 10: "stand",
+# 11: "swim",
+# 12: "walk",
+# 13: "answer phone",
+# 14: "carry/hold (an object)",
+# 15: "climb (e.g., a mountain)",
+# 16: "close (e.g., a door, a box)",
+# 17: "cut",
+# 18: "dress/put on clothing",
+# 19: "drink",
+# 20: "drive (e.g., a car, a truck)",
+# 21: "eat",
+# 22: "enter",
+# 23: "hit (an object)",
+# 24: "lift/pick up",
+# 25: "listen (e.g., to music)",
+# 26: "open (e.g., a window, a car door)",
+# 27: "play musical instrument",
+# 28: "point to (an object)",
+# 29: "pull (an object)",
+# 30: "push (an object)",
+# 31: "put down",
+# 32: "read",
+# 33: "ride (e.g., a bike, a car, a horse)",
+# 34: "sail boat",
+# 35: "shoot",
+# 36: "smoke",
+# 37: "take a photo",
+# 38: "text on/look at a cellphone",
+# 39: "throw",
+# 40: "touch (an object)",
+# 41: "turn (e.g., a screwdriver)",
+# 42: "watch (e.g., TV)",
+# 43: "work on a computer",
+# 44: "write",
+# 45: "fight/hit (a person)",
+# 46: "give/serve (an object) to (a person)",
+# 47: "grab (a person)",
+# 48: "hand clap",
+# 49: "hand shake",
+# 50: "hand wave",
+# 51: "hug (a person)",
+# 52: "kiss (a person)",
+# 53: "lift (a person)",
+# 54: "listen to (a person)",
+# 55: "push (another person)",
+# 56: "sing to (e.g., self, a person, a group)",
+# 57: "take (an object) from (a person)",
+# 58: "talk to (e.g., self, a person, a group)",
+# 59: "watch (a person)" }
