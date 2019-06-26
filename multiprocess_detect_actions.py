@@ -337,7 +337,7 @@ def main():
         fps = 1000//DELAY
     else:
         print("Reading video file %s" % video_path)
-        reader = imageio.get_reader(video_path, 'ffmpeg', size=(640, 480))
+        reader = imageio.get_reader(video_path, 'ffmpeg')
         fps = reader.get_meta_data()['fps'] #// fps_divider
         W, H = reader.get_meta_data()['size']
         #T = tracker.timesteps
