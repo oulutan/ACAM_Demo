@@ -21,6 +21,9 @@ The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiproce
 
 <img src="https://github.com/oulutan/ACAM_Demo/blob/master/github_images/lab_actions_snap.png" width="500">
 
+Also tested on videos from various sources such as surveillance cameras and autonomous driving datasets. Video available at [surveillance demo link](https://drive.google.com/open?id=1FnwicGdI94XP884dP_uISMFLIE_EZ-PW).
+
+<img src="https://github.com/oulutan/ACAM_Demo/blob/master/github_images/qualitative_results_with_face.png" width="500">
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
 
