@@ -37,7 +37,7 @@ pbr==5.1.1
 pdbpp==0.9.3
 pexpect==4.6.0
 pickleshare==0.7.5
-Pillow==5.3.0
+Pillow==6.2.0
 pipreqs==0.4.9
 prompt-toolkit==1.0.15
 protobuf==3.6.1
