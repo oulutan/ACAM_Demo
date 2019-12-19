@@ -15,7 +15,7 @@ If you use this work, please cite our paper:
 
 Updated version of our paper is out! Check it out on Arxiv.
 
-This repo only contains the demo code, training and evaluation codes will be released in https://github.com/oulutan/ActorConditionedAttentionMaps (Currently private repo)
+This repo only contains the demo code, training and evaluation codes are available in https://github.com/oulutan/ActorConditionedAttentionMaps
 
 The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh). Following is a snapshot from the video. 
 
