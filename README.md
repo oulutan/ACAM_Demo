@@ -2,7 +2,7 @@
 
 This repo contains the demo code for our action recognition model explained in https://arxiv.org/abs/1812.11631 
 
-TRAINING CODE AVAILABLE AT: https://github.com/oulutan/ActorConditionedAttentionMaps
+**TRAINING CODE AVAILABLE AT**: https://github.com/oulutan/ActorConditionedAttentionMaps
 
 If you use this work, please cite our paper: 
 
