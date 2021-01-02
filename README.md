@@ -19,21 +19,21 @@ If you use this work, please cite our paper:
 Updated version of our paper is out! Check it out on Arxiv.
 
 
-The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/open?id=1T5AJYp1cF0wLnxG8FmRjoUEGtiR7vvYh). Following is a snapshot from the video. 
+The demo code achieves 16 fps through webcam using a GTX 1080Ti using multiprocessing and some other tricks. See the video at [real-time demo link](https://drive.google.com/file/d/15AIBjM0K-vTGaFUGhqGZO5EoqwuSrW-D/view?usp=sharing). Following is a snapshot from the video. 
 
 <img src="https://github.com/oulutan/ACAM_Demo/blob/master/github_images/lab_actions_snap.png" width="500">
 
-Also tested on videos from various sources such as surveillance cameras and autonomous driving datasets. Video available at [surveillance demo link](https://drive.google.com/open?id=1FnwicGdI94XP884dP_uISMFLIE_EZ-PW).
+Also tested on videos from various sources such as surveillance cameras and autonomous driving datasets. Video available at [surveillance demo link](https://drive.google.com/file/d/1-Wv7Vx6d6molIEYhljFREmJZuzSdbMuM/view?usp=sharing).
 
 <img src="https://github.com/oulutan/ACAM_Demo/blob/master/github_images/qualitative_results_with_face.png" width="500">
 
 Additionally, we implemented the activation map displaying functionality to the demo code. This shows where the model gets activated for each action and gives pretty interesting results on understanding what model sees.
 
-[Object interactions activation maps](https://drive.google.com/open?id=1Ly97R6HvFQMkZy9emvLlXTRN125HO2-R) 
+[Object interactions activation maps](https://drive.google.com/file/d/1Hly1vSif0w3IiMkB3grskDrl9EJZAgkG/view?usp=sharing) 
 ![Object Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/object_cams_snap.png)
 
 
-[Person movement actions activation maps](https://drive.google.com/open?id=1U2E1WvYlvKGmlbnVlOu8CWYhsApKygCR)
+[Person movement actions activation maps](https://drive.google.com/file/d/1eLoGGvmgdZ2h1GBd70aghVZ4hc7T5FkK/view?usp=sharing)
 ![Person Snaphot](https://github.com/oulutan/ACAM_Demo/blob/master/github_images/person_states_snap.png)
 
 The demo code includes a complete pipeline including object detection (Using [TF Object API](https://github.com/tensorflow/models)), tracking/bbox matching (Using [DeepSort](https://github.com/nwojke/deep_sort)) and our action detection module.
@@ -86,7 +86,7 @@ http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_201
 https://drive.google.com/open?id=1m2ebLHB2JThZC8vWGDYEKGsevLssSkjo
 
 6. Download the action detector model weights into action_detection/weights/ from following link:
-https://drive.google.com/open?id=138gfVxWs_8LhHiVO03tKpmYBzIaTgD70
+https://drive.google.com/drive/folders/1VhR3tOP7Hi2_ZsLonaty-d_HEVXcwfor?usp=sharing
 
 # How to run
 There are 2 main scripts in this repo. 
