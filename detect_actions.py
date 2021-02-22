@@ -233,19 +233,21 @@ def visualize_detection_results(img_np, active_actors, prob_dict):
         action_message_list = ["%s:%.3f" % (actres[0][0:7], actres[1]) for actres in cur_act_results if actres[1]>action_th]
         # action_message = " ".join(action_message_list)
 
-        color = COLORS[actor_id]
+        raw_colors = COLORS[actor_id]
+        rect_color = tuple(int(raw_color) for raw_color in raw_colors)
+        text_color = tuple(255-color_value for color_value in rect_color)
 
-        cv2.rectangle(disp_img, (left,top), (right,bottom), color, 3)
+        cv2.rectangle(disp_img, (left,top), (right,bottom), rect_color, 3)
 
         font_size =  max(0.5,(right - left)/50.0/float(len(message)))
-        cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), color, -1)
-        cv2.putText(disp_img, message, (left, top-12), 0, font_size, (255,255,255)-color, 1)
+        cv2.rectangle(disp_img, (left, top-int(font_size*40)), (right,top), rect_color, -1)
+        cv2.putText(disp_img, message, (left, top-12), 0, font_size, text_color, 1)
 
         #action message writing
-        cv2.rectangle(disp_img, (left, top), (right,top+10*len(action_message_list)), color, -1)
+        cv2.rectangle(disp_img, (left, top), (right,top+10*len(action_message_list)), rect_color, -1)
         for aa, action_message in enumerate(action_message_list):
             offset = aa*10
-            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, (255,255,255)-color, 1)
+            cv2.putText(disp_img, action_message, (left, top+5+offset), 0, 0.5, text_color, 1)
 
     return disp_img
 
