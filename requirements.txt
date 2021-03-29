@@ -42,7 +42,7 @@ pipreqs==0.4.9
 prompt-toolkit==1.0.15
 protobuf==3.6.1
 ptyprocess==0.6.0
-Pygments==2.3.1
+Pygments==2.7.4
 pyparsing==2.3.0
 pyrepl==0.8.4
 python-dateutil==2.7.5
