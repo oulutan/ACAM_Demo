@@ -65,7 +65,7 @@ termcolor==1.1.0
 toolz==0.9.0
 tqdm==4.28.1
 traitlets==4.3.2
-urllib3==1.24.2
+urllib3==1.26.5
 wcwidth==0.1.7
 Werkzeug==0.14.1
 wmctrl==0.3
